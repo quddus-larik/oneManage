@@ -1,5 +1,9 @@
+"use client"
+
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { SectionCards } from "@/components/section-cards";
+import { Button } from "@/components/ui/button";
+import { SignInButton } from "@clerk/nextjs";
 
 export default function Page() {
 
@@ -12,6 +16,7 @@ export default function Page() {
             <div className="px-4 lg:px-6">
               <ChartAreaInteractive />
             </div>
+            <SignInButton />
             {/* <DataTable data={data} /> */}
           </div>
         </div>

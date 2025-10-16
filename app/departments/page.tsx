@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { useUser } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 import { TitleHeader } from "@/components/custom/main-heading"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,69 +15,27 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { ArrowUpRight } from "lucide-react"
 
-// 🧱 Mock Departments Data
-const initialDepartments = [
-  {
-    id: 1,
-    name: "Engineering",
-    type: "Technical",
-    description: "Handles product development and code maintenance.",
-    employees: 25,
-    professionalDetails: "Core product and infrastructure team.",
-  },
-  {
-    id: 2,
-    name: "Human Resources",
-    type: "Administrative",
-    description: "Manages recruitment and employee relations.",
-    employees: 8,
-    professionalDetails: "Responsible for policies, onboarding, and culture.",
-  },
-  {
-    id: 3,
-    name: "Design",
-    type: "Creative",
-    description: "Focuses on product design and user experience.",
-    employees: 10,
-    professionalDetails: "UI/UX and brand visual identity.",
-  },
-  {
-    id: 4,
-    name: "Sales & Marketing",
-    type: "Business",
-    description: "Responsible for growth and client relationships.",
-    employees: 12,
-    professionalDetails: "Leads campaigns, partnerships, and sales funnels.",
-  },
-  {
-    id: 5,
-    name: "Finance",
-    type: "Administrative",
-    description: "Oversees budgeting and payroll.",
-    employees: 6,
-    professionalDetails: "Manages accounts, reports, and compliance.",
-  },
-]
+export default function DepartmentsPage() {
+  const { user } = useUser()
+  const router = useRouter() // ✅ moved out of function to prevent re-instantiation
 
-export default function Page() {
   const [search, setSearch] = React.useState("")
   const [filter, setFilter] = React.useState("All")
-  const [departments, setDepartments] = React.useState(initialDepartments)
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
-  const [editingDept, setEditingDept] = React.useState<any>(null)
+  const [departments, setDepartments] = React.useState<any[]>([])
+  const [openDialog, setOpenDialog] = React.useState(false)
 
   const [formData, setFormData] = React.useState({
     name: "",
@@ -84,61 +44,82 @@ export default function Page() {
     professionalDetails: "",
   })
 
-  // 🔍 Filter + Search logic
-  const filteredDepartments = departments.filter((dept) => {
-    const matchesSearch =
-      dept.name.toLowerCase().includes(search.toLowerCase()) ||
-      dept.description.toLowerCase().includes(search.toLowerCase())
-    const matchesFilter = filter === "All" ? true : dept.type === filter
-    return matchesSearch && matchesFilter
-  })
+  // 🧩 Fetch user's departments
+  React.useEffect(() => {
+    if (!user?.primaryEmailAddress?.emailAddress) return
 
-  // 🧩 Open Drawer for Add or Edit
-  const openDrawer = (dept?: any) => {
-    if (dept) {
-      setEditingDept(dept)
-      setFormData({
-        name: dept.name,
-        type: dept.type,
-        description: dept.description,
-        professionalDetails: dept.professionalDetails || "",
-      })
-    } else {
-      setEditingDept(null)
-      setFormData({
-        name: "",
-        type: "",
-        description: "",
-        professionalDetails: "",
-      })
+    const fetchDepartments = async () => {
+      try {
+        const email = user.primaryEmailAddress?.emailAddress
+        const res = await fetch(`/api/v1/departments?email=${email}`)
+        const data = await res.json()
+
+        if (data.success && Array.isArray(data.data)) {
+          setDepartments(data.data)
+        } else {
+          console.error("❌ Failed to load departments:", data.message)
+        }
+      } catch (err) {
+        console.error("⚠️ Error fetching departments:", err)
+      }
     }
-    setIsDrawerOpen(true)
+
+    fetchDepartments()
+  }, [user])
+
+  // 🔍 Filter + Search logic
+  const filteredDepartments = React.useMemo(() => {
+    return departments.filter((dept) => {
+      const matchesSearch =
+        dept.name?.toLowerCase().includes(search.toLowerCase()) ||
+        dept.description?.toLowerCase().includes(search.toLowerCase())
+      const matchesFilter = filter === "All" ? true : dept.type === filter
+      return matchesSearch && matchesFilter
+    })
+  }, [departments, search, filter])
+
+  // 💾 Save new department
+  const handleSave = async () => {
+    if (!formData.name.trim()) return
+    if (!user?.primaryEmailAddress?.emailAddress) {
+      console.warn("⚠️ No logged-in user found.")
+      return
+    }
+
+    try {
+      const payload = {
+        email: user.primaryEmailAddress.emailAddress,
+        department: {
+          name: formData.name.trim(),
+          type: formData.type,
+          description: formData.description,
+          professionalDetails: formData.professionalDetails,
+        },
+      }
+
+      const res = await fetch("/api/v1/departments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        // ✅ Update list dynamically
+        setDepartments((prev) => [...prev, data.data])
+        setFormData({ name: "", type: "", description: "", professionalDetails: "" })
+        setOpenDialog(false)
+      } else {
+        console.error("❌ Failed to add department:", data.message)
+      }
+    } catch (err) {
+      console.error("⚠️ Error saving department:", err)
+    }
   }
 
-  // 💾 Save or Update Department
-  const handleSave = () => {
-    if (!formData.name.trim()) return
-
-    if (editingDept) {
-      setDepartments((prev) =>
-        prev.map((d) =>
-          d.id === editingDept.id ? { ...d, ...formData } : d
-        )
-      )
-    } else {
-      const newDepartment = {
-        id: departments.length + 1,
-        name: formData.name,
-        type: formData.type,
-        description: formData.description,
-        employees: Math.floor(Math.random() * 10) + 3,
-        professionalDetails: formData.professionalDetails,
-      }
-      setDepartments([...departments, newDepartment])
-    }
-
-    setIsDrawerOpen(false)
-    setEditingDept(null)
+  // 🚀 Navigate to department details page
+  function handleRoute(id: string, name: string) {
+    router.push(`/departments/${name}?id=${id}`)
   }
 
   return (
@@ -146,7 +127,7 @@ export default function Page() {
       {/* 🏷️ Page Header */}
       <TitleHeader
         label="Departments"
-        span="Manage your departments across employees."
+        span="Manage and organize your company's departments."
       />
 
       {/* 🔍 Search + Filter + Add Button */}
@@ -173,36 +154,106 @@ export default function Page() {
           </Select>
         </div>
 
-        {/* ➕ Add Department Button */}
-        <Button className="w-full sm:w-auto" onClick={() => openDrawer()}>
-          + Add Department
-        </Button>
+        {/* ➕ Add Department Dialog */}
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto">+ Add Department</Button>
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle>Add New Department</DialogTitle>
+              <DialogDescription>
+                Fill in the details below to create a new department.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Separator />
+
+            <div className="space-y-3 py-2">
+              <div className="grid gap-2">
+                <Label>Department Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Engineering"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(val) => setFormData({ ...formData, type: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Technical">Technical</SelectItem>
+                    <SelectItem value="Administrative">Administrative</SelectItem>
+                    <SelectItem value="Creative">Creative</SelectItem>
+                    <SelectItem value="Business">Business</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Write a short department overview..."
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Professional Details</Label>
+                <Textarea
+                  value={formData.professionalDetails}
+                  onChange={(e) =>
+                    setFormData({ ...formData, professionalDetails: e.target.value })
+                  }
+                  placeholder="Add strategic or professional details..."
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={handleSave}>Add Department</Button>
+              <Button variant="outline" onClick={() => setOpenDialog(false)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* 🧱 Departments Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredDepartments.length > 0 ? (
           filteredDepartments.map((dept) => (
-            <Card key={dept.id} className="hover:shadow-md transition-all">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex justify-between">
-                  {dept.name}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openDrawer(dept)}
-                  >
-                    Edit
-                  </Button>
-                </CardTitle>
+            <Card
+              key={dept._id || dept.name}
+              className="hover:shadow-md transition-all cursor-pointer"
+            >
+              <CardHeader className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold">{dept.name}</CardTitle>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => handleRoute(dept._id, dept.name)}
+                >
+                  <ArrowUpRight />
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground line-clamp-3">
                   {dept.description}
                 </p>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    👥 {dept.employees} employees
+                    👥 {dept.employees?.length || 0} employees
                   </span>
                   <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
                     {dept.type}
@@ -217,93 +268,6 @@ export default function Page() {
           </p>
         )}
       </div>
-
-      {/* 🧩 Add/Edit Drawer */}
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="sm:max-w-[420px] ml-2 border-l bg-background">
-          <DrawerHeader>
-            <DrawerTitle>
-              {editingDept ? "Edit Department" : "Add New Department"}
-            </DrawerTitle>
-            <DrawerDescription>
-              {editingDept
-                ? "Update the department information below."
-                : "Fill in the details to create a new department."}
-            </DrawerDescription>
-          </DrawerHeader>
-
-          <Separator />
-
-          <div className="px-4 pb-4 max-h-[65vh] overflow-y-auto space-y-3">
-            <div className="grid gap-2">
-              <Label>Department Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="e.g., Engineering"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, type: val })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Technical">Technical</SelectItem>
-                  <SelectItem value="Administrative">Administrative</SelectItem>
-                  <SelectItem value="Creative">Creative</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Write a short department overview..."
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Professional Details</Label>
-              <Textarea
-                value={formData.professionalDetails}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    professionalDetails: e.target.value,
-                  })
-                }
-                placeholder="Add strategic or professional details..."
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          <DrawerFooter>
-            <Button onClick={handleSave}>
-              {editingDept ? "Save Changes" : "Add Department"}
-            </Button>
-            <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
     </div>
   )
 }
