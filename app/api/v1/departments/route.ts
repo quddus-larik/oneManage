@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!email) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { name, type, description, professionalDetails, employeeEmails } = body;
+    const { name, type, description, professionalDetails, employees } = body;
 
     if (!name) return NextResponse.json({ success: false, message: "Department name required" }, { status: 400 });
 
@@ -43,10 +43,6 @@ export async function POST(req: NextRequest) {
     const userDoc = await users.findOne({ email });
     if (!userDoc) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
-    // Fetch selected employees from user's employees array
-    const selectedEmployees = (userDoc.employees || []).filter((emp: any) =>
-      employeeEmails.includes(emp.email)
-    ).map((emp: any) => ({ ...emp, addedAt: new Date(), updatedAt: new Date(), department: "" }));
 
     const newDepartment = {
       _id: crypto.randomUUID(),
@@ -54,13 +50,13 @@ export async function POST(req: NextRequest) {
       type: type || "General",
       description: description || "",
       professionalDetails: professionalDetails || "",
-      employees: selectedEmployees,
+      employees,
       createdAt: new Date(),
     };
 
     await users.updateOne(
       { email },
-      { $push: { departments: newDepartment }, $set: { updatedAt: new Date() } }
+      { $push: { departments: newDepartment as any }, $set: { updatedAt: new Date() } }
     );
 
     return NextResponse.json({ success: true, message: "Department created", data: newDepartment }, { status: 201 });
