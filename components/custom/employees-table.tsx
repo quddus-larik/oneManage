@@ -31,6 +31,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "../ui/separator"
+import { PenLine, Trash } from "lucide-react"
+import { Tooltip, TooltipContent } from "../ui/tooltip"
+import { TooltipTrigger } from "@radix-ui/react-tooltip"
 
 type Employee = {
   name: string
@@ -51,7 +54,7 @@ type Department = {
   name: string
 }
 
-export function EmployeeTable({ userEmail }: { userEmail: string }) {
+export function EmployeeTable() {
   const [employees, setEmployees] = React.useState<Employee[]>([])
   const [departments, setDepartments] = React.useState<Department[]>([])
   const [search, setSearch] = React.useState("")
@@ -208,20 +211,38 @@ export function EmployeeTable({ userEmail }: { userEmail: string }) {
                 </TableCell>
                 <TableCell>{emp.salary}</TableCell>
                 <TableCell className="text-right space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedEmployee(emp) || setIsDrawerOpen(true)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteEmployee(emp.email)}
-                  >
-                    Delete
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedEmployee(emp);
+                          setIsDrawerOpen(true);
+                        }
+                        }
+                      >
+                        <PenLine/>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>edit member</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDeleteEmployee(emp.email)}
+                      >
+                        <Trash />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>delete member</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))
