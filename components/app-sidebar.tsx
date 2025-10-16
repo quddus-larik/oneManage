@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useEffect, useState } from "react"
 import {
   IconCamera,
   IconChartBar,
@@ -32,6 +33,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useUser } from "@clerk/nextjs"
 
 const data = {
   user: {
@@ -146,6 +148,40 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+  const { isLoaded, isSignedIn, user} = useUser();
+  console.log(user);
+  const User = {
+    name: user?.firstName,
+    email: user?.primaryEmailAddress?.emailAddress,
+    avatar: user?.imageUrl
+  }
+  
+  useEffect(() => {
+  async function addUser() {
+    if (!user) return; // Wait until Clerk user is loaded
+
+    const name = encodeURIComponent(user.firstName || "");
+    const email = encodeURIComponent(user.primaryEmailAddress?.emailAddress || "");
+    const avatar = encodeURIComponent(user.imageUrl || "");
+
+    const res = await fetch(`/api/v1/init-user?name=${name}&email=${email}&avatar=${avatar}`, {
+      method: "POST",
+    });
+
+    const data = await res.json();
+    console.log("Response:", data);
+  }
+
+  addUser();
+}, [user]);
+
+
+
+
+
+
+  
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -157,7 +193,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">OneManage</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -168,7 +204,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={User} />
       </SidebarFooter>
     </Sidebar>
   )
