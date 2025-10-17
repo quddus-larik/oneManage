@@ -1,57 +1,62 @@
-// lib/db.ts
-import { MongoClient } from "mongodb"
+import { MongoClient, Db } from "mongodb"
 
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017"
+const uri = process.env.MONGODB_URI as string || "mongodb://localhost:27017"
 const dbName = process.env.MONGODB_DB || "one-manage"
 
-// ⚡ Create a fresh MongoDB connection each time
+if (!uri) {
+  throw new Error("❌ Missing MONGODB_URI in environment variables")
+}
+
+let client: MongoClient | null = null
+let db: Db | null = null
+
+// ✅ Reuse the same connection across hot reloads and requests
 export async function mongoDB() {
-  if (!uri) {
-    throw new Error("❌ Please define the MONGODB_URI environment variable inside .env.local")
-  }
+  if (db && client) return { client, db }
 
-  const client = new MongoClient(uri)
+  client = new MongoClient(uri, {
+    serverApi: {
+      version: "1",
+      strict: true,
+      deprecationErrors: true,
+    },
+  })
+
   await client.connect()
-  const db = client.db(dbName)
+  db = client.db(dbName)
 
-  console.log(`✅ Connected to MongoDB: ${dbName}`)
-
+  console.log(`✅ MongoDB connected → ${dbName}`)
   return { client, db }
 }
 
-// 🧩 Generic helper for collection access
+// 🧩 Generic collection accessor
 export async function getCollection<T = any>(collectionName: string) {
   const { db } = await mongoDB()
   return db.collection<any>(collectionName)
 }
 
-// 🧠 Example CRUD utilities
-export async function fetchAll(collectionName: string) {
-  const collection = await getCollection(collectionName)
-  const result = await collection.find({}).toArray()
-  return result
+// 🧠 Example CRUD helpers
+export async function fetchAll<T = any>(collectionName: string) {
+  const collection = await getCollection<T>(collectionName)
+  return await collection.find({}).toArray()
 }
 
-export async function insertOne(collectionName: string, data: any) {
-  const collection = await getCollection(collectionName)
-  const result = await collection.insertOne(data)
-  return result
+export async function insertOne<T = any>(collectionName: string, data: T) {
+  const collection = await getCollection<T>(collectionName)
+  return await collection.insertOne(data)
 }
 
-export async function findOne(collectionName: string, query: any) {
-  const collection = await getCollection(collectionName)
-  const result = await collection.findOne(query)
-  return result
+export async function findOne<T = any>(collectionName: string, query: any) {
+  const collection = await getCollection<T>(collectionName)
+  return await collection.findOne(query)
 }
 
 export async function updateOne(collectionName: string, filter: any, update: any) {
   const collection = await getCollection(collectionName)
-  const result = await collection.updateOne(filter, { $set: update })
-  return result
+  return await collection.updateOne(filter, { $set: update })
 }
 
 export async function deleteOne(collectionName: string, filter: any) {
   const collection = await getCollection(collectionName)
-  const result = await collection.deleteOne(filter)
-  return result
+  return await collection.deleteOne(filter)
 }
