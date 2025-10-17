@@ -35,6 +35,7 @@ export default function Page() {
         const res = await fetch("/api/v1/employees", { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to fetch employees");
         const result = await res.json();
+        setEmployees(result.data)
       } catch (err: any) {
         console.error("Fetch error:", err);
         if (active) setError("Unable to load employee data.");
