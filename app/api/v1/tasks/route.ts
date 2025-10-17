@@ -3,42 +3,48 @@ import { mongoDB } from "@/lib/db"
 import { currentUser } from "@clerk/nextjs/server"
 
 // ------------------- GET TASKS -------------------
+
 export async function GET(req: NextRequest) {
-  try {
-    const authUser = await currentUser();
-    const email = authUser?.primaryEmailAddress?.emailAddress;
+    try {
+        const authUser = await currentUser();
+        const email = authUser?.primaryEmailAddress?.emailAddress;
 
-    if (!email) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+        if (!email) {
+            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+        }
+
+        const { db } = await mongoDB();
+        const users = db.collection("users");
+
+        const { searchParams } = new URL(req.url);
+        const taskId = searchParams.get("id");
+
+        const userDoc = await users.findOne(
+            { email },
+            { projection: { tasks: 1, _id: 0 } }
+        );
+
+        const tasks = userDoc?.tasks || [];
+
+        if (tasks.length === 0) {
+            return NextResponse.json({ success: true, data: [] });
+        }
+
+        if (taskId) {
+            const task = tasks.find((t: any) => t._id.toString() === taskId);
+
+            if (task) {
+                return NextResponse.json({ success: true, data: task });
+            } else {
+                return NextResponse.json({ success: false, message: "Task not found" }, { status: 404 });
+            }
+        }
+
+        return NextResponse.json({ success: true, data: tasks });
+    } catch (err: any) {
+        console.error("Task GET Error:", err); 
+        return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 });
     }
-
-    const { db } = await mongoDB();
-    const users = db.collection("users");
-
-    const { searchParams } = new URL(req.url);
-    const taskId = searchParams.get("id"); // get id from query params
-
-    // Fetch user tasks
-    const userDoc = await users.findOne(
-      { email },
-      { projection: { tasks: 1, _id: 0 } }
-    );
-
-    if (!userDoc?.tasks) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-
-    // If an ID is provided, find the specific task
-    if (taskId) {
-      const task = userDoc.tasks.find((t: any) => t.id === taskId); // assuming tasks have `id` field
-      return NextResponse.json({ success: true, data: task || null });
-    }
-
-    // If no ID, return all tasks
-    return NextResponse.json({ success: true, data: userDoc.tasks });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
-  }
 }
 
 // ------------------- CREATE TASK -------------------

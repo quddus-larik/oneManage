@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
             { email },
             { projection: { employees: 1, _id: 0 } }
         );
+        
 
         return NextResponse.json({ success: true, data: userDoc?.employees || [] });
     } catch (err: any) {
