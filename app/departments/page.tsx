@@ -249,7 +249,7 @@ export default function DepartmentsPage() {
             filteredDepartments.map((dept) => (
               <Card
                 key={dept._id || dept.name}
-                className="hover:shadow-md transition-all cursor-pointer"
+                className="hover:shadow-md transition-all"
               >
                 <CardHeader className="flex justify-between items-center">
                   <CardTitle className="text-lg font-semibold">{dept.name}</CardTitle>

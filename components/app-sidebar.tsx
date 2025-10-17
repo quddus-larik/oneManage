@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-import { useEffect, useState } from "react"
+import React, { useEffect, useMemo } from "react"
 import {
   IconCamera,
   IconChartBar,
@@ -11,17 +10,12 @@ import {
   IconFileDescription,
   IconFileWord,
   IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
   IconListDetails,
   IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
 } from "@tabler/icons-react"
+import { useUser } from "@clerk/nextjs"
 
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -32,160 +26,84 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useUser } from "@clerk/nextjs"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
+// ---- Static Nav Data ----
+const NAV_DATA = {
   navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: IconDashboard,
-    },
-    {
-      title: "Employees",
-      url: "/employees",
-      icon: IconListDetails,
-    },
-    {
-      title: "Departments",
-      url: "/departments",
-      icon: IconChartBar,
-    },
-    {
-      title: "Tasks",
-      url: "/tasks",
-      icon: IconFolder,
-    }
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
+    { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
+    { title: "Employees", url: "/employees", icon: IconListDetails },
+    { title: "Departments", url: "/departments", icon: IconChartBar },
+    { title: "Tasks", url: "/tasks", icon: IconFolder },
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const { isLoaded, isSignedIn, user } = useUser()
 
-  const { isLoaded, isSignedIn, user} = useUser();
-  console.log(user);
-  const User = {
-    name: user?.firstName,
-    email: user?.primaryEmailAddress?.emailAddress,
-    avatar: user?.imageUrl
-  }
-  
+  // ---- Memoized User Object ----
+  const userData = useMemo(
+    () =>
+      user
+        ? {
+            name: user.firstName || "User",
+            email: user.primaryEmailAddress?.emailAddress || "",
+            avatar: user.imageUrl || "",
+          }
+        : null,
+    [user]
+  )
+
+  // ---- Initialize user in DB ----
   useEffect(() => {
-  async function addUser() {
-    if (!user) return; // Wait until Clerk user is loaded
+    if (!userData) return
 
-    const name = encodeURIComponent(user.firstName || "");
-    const email = encodeURIComponent(user.primaryEmailAddress?.emailAddress || "");
-    const avatar = encodeURIComponent(user.imageUrl || "");
+    const addUser = async () => {
+      try {
+        const query = new URLSearchParams({
+          name: userData.name,
+          email: userData.email,
+          avatar: userData.avatar,
+        })
 
-    const res = await fetch(`/api/v1/init-user?name=${name}&email=${email}&avatar=${avatar}`, {
-      method: "POST",
-    });
+        const res = await fetch(`/api/v1/init-user?${query.toString()}`, {
+          method: "POST",
+        })
 
-    const data = await res.json();
-    console.log("Response:", data);
-  }
+        if (!res.ok) throw new Error("Failed to initialize user")
+        console.log("User initialized successfully")
+      } catch (error) {
+        console.error("User init error:", error)
+      }
+    }
 
-  addUser();
-}, [user]);
+    addUser()
+  }, [userData])
 
-
-
-
-
-
-  
+  // ---- Return ----
   return (
     <Sidebar collapsible="offcanvas" {...props}>
+      {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="/dashboard">
-                <img src="/onemanage.svg" className="h-6"/>
+            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+              <a href="/dashboard" className="flex items-center gap-2">
+                <img src="/onemanage.svg" alt="Logo" className="h-6" />
                 <span className="text-base font-semibold">OneManage</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
+      {/* Content */}
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={NAV_DATA.navMain} />
       </SidebarContent>
+
+      {/* Footer */}
       <SidebarFooter>
-        <NavUser user={User as any} />
+        {userData && <NavUser user={userData as any} />}
       </SidebarFooter>
     </Sidebar>
   )

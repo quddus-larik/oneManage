@@ -34,8 +34,7 @@ export default function Home() {
             oneManage — HR, Tasks, Payroll, all in one simple app
           </h2>
           <p className="text-muted-foreground max-w-xl">
-            Run your team with clarity. Create tasks, assign employees, track completion,
-            and keep payroll simple — all from a single dashboard built for founders and managers.
+            Run your team with clarity. Create tasks, assign employees and track completion, simple — all from a single dashboard built for founders, managers and small businesses.
           </p>
 
           <div className="flex gap-3">
@@ -54,7 +53,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-5 w-5 text-green-500" />
-              <span className="text-sm">Simple employee directory</span>
+              <span className="text-sm">Simple employee directories</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-5 w-5 text-green-500" />
