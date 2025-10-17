@@ -1,5 +1,5 @@
 // lib/db.ts
-import { MongoClient, Db } from "mongodb"
+import { MongoClient } from "mongodb"
 
 const uri = process.env.MONGODB_URI || "mongodb://localhost:27017"
 const dbName = process.env.MONGODB_DB || "one-manage"
@@ -22,7 +22,7 @@ export async function mongoDB() {
 // 🧩 Generic helper for collection access
 export async function getCollection<T = any>(collectionName: string) {
   const { db } = await mongoDB()
-  return db.collection<T>(collectionName)
+  return db.collection<any>(collectionName)
 }
 
 // 🧠 Example CRUD utilities
