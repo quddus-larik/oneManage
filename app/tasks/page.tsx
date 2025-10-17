@@ -117,14 +117,12 @@ export default function Page() {
     fetchEmployees();
   }, []);
 
-  // Filtered tasks
   const filteredTasks = tasks.filter(
     (task) =>
       task.title.toLowerCase().includes(search.toLowerCase()) ||
       task.description.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Add new task
   const handleAddTask = async () => {
     if (!newTask.title) return;
     try {
