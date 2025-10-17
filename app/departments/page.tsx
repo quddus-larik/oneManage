@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ArrowUpRight } from "lucide-react";
 import { DropdownCheckboxes } from "@/components/custom/multiselect"; // import your checkbox dropdown
+import Dashboard from "@/app/provider/ui";
 
 export default function DepartmentsPage() {
   const { user } = useUser();
@@ -117,6 +118,7 @@ export default function DepartmentsPage() {
   }
 
   return (
+    <Dashboard>
     <div className="p-4 lg:p-6 space-y-6">
       <TitleHeader label="Departments" span="Manage and organize your company's departments." />
 
@@ -255,5 +257,6 @@ export default function DepartmentsPage() {
         )}
       </div>
     </div>
+    </Dashboard>
   );
 }

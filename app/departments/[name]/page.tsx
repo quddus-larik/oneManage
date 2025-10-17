@@ -13,7 +13,8 @@ import { DropdownCheckboxes } from "@/components/custom/multiselect";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { DialogTitle, DialogTrigger } from "@radix-ui/react-dialog";
-import { Ellipsis, Trash } from "lucide-react";
+import { Ellipsis, PenLine, Trash } from "lucide-react";
+import Dashboard from "@/app/provider/ui";
 
 export default function Page() {
     const searchParams = useSearchParams();
@@ -119,6 +120,7 @@ if (error) return <div className="p-6 text-red-500">{error}</div>;
 if (!department) return <div className="p-6 text-gray-500">No department data.</div>;
 
 return (
+    <Dashboard>
     <div className="p-6 space-y-4">
         <TitleHeader label={department.name} span={department.description} />
         <div className="flex flex-col lg:flex-row gap-3 ">
@@ -130,7 +132,7 @@ return (
             </Badge>
         </div>
         <div className="flex flex-col lg:flex-row gap-1 ">
-            <Button onClick={openEditDrawer}>Edit Department</Button>
+            <Button onClick={openEditDrawer}><PenLine/>Edit department</Button>
             <Dialog>
                 <DialogTrigger asChild>
                     <Button variant={"outline"} size={"icon"}>
@@ -228,6 +230,7 @@ return (
         </Drawer>
 
     </div>
+    </Dashboard>
 );
 }
 

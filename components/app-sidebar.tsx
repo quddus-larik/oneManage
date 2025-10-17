@@ -20,7 +20,6 @@ import {
   IconUsers,
 } from "@tabler/icons-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -44,22 +43,22 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
       title: "Employees",
-      url: "#",
+      url: "/employees",
       icon: IconListDetails,
     },
     {
       title: "Departments",
-      url: "#",
+      url: "/departments",
       icon: IconChartBar,
     },
     {
       title: "Tasks",
-      url: "#",
+      url: "/tasks",
       icon: IconFolder,
     }
   ],
@@ -109,23 +108,6 @@ const data = {
           url: "#",
         },
       ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
     },
   ],
   documents: [
@@ -201,10 +183,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={User} />
+        <NavUser user={User as any} />
       </SidebarFooter>
     </Sidebar>
   )

@@ -34,16 +34,19 @@ export function SiteHeader() {
             {/* Always start with Dashboard link */}
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard">oneManage</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
 
             {/* Generate from path segments */}
             {pathSegments.map((segment, index) => {
-              const href = "/" + pathSegments.slice(0, index + 1).join("/")
-              const isLast = index === pathSegments.length - 1
-              const label =
-                segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
+              const href = "/" + pathSegments.slice(0, index + 1).join("/");
+              const isLast = index === pathSegments.length - 1;
+
+              // Decode URL and replace hyphens with spaces
+              const label = decodeURIComponent(segment)
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase()); // Capitalize first letters
 
               return (
                 <React.Fragment key={href}>
@@ -58,8 +61,9 @@ export function SiteHeader() {
                     )}
                   </BreadcrumbItem>
                 </React.Fragment>
-              )
+              );
             })}
+
           </BreadcrumbList>
         </Breadcrumb>
       </div>
