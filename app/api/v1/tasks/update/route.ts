@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     if (!adminDoc) return NextResponse.json({ error: "Admin not found" }, { status: 404 });
 
-    const task = adminDoc.tasks.find((t) => t._id === task_id);
+    const task = adminDoc.tasks.find((t: any) => t._id === task_id);
     if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
     return NextResponse.json({ task });

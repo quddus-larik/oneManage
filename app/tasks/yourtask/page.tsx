@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ interface Task {
   assigned: Assigned[];
 }
 
-export default function Page() {
+function TaskPageContent() {
   const params = useSearchParams();
   const id = params.get("id") || "";
   const admin = params.get("admin") || "";
@@ -31,7 +31,6 @@ export default function Page() {
   const [loading, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<boolean>(false);
 
-  // Fetch task on load
   useEffect(() => {
     if (!id || !admin) return;
 
@@ -51,7 +50,6 @@ export default function Page() {
     fetchTask();
   }, [id, admin]);
 
-  // Update task completed status
   const updateTaskStatus = async (completed: boolean) => {
     if (!task) return;
     setUpdating(true);
@@ -63,9 +61,7 @@ export default function Page() {
         body: JSON.stringify({ admin, task_id: task._id, completed }),
       });
 
-      const data = await res.json();
-      if (res.ok && task.assigned.length > 0) {
-        // update locally for UI
+      if (res.ok) {
         setTask((prev) =>
           prev
             ? {
@@ -120,5 +116,13 @@ export default function Page() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<p className="text-center mt-10">Loading page...</p>}>
+      <TaskPageContent />
+    </Suspense>
   );
 }
