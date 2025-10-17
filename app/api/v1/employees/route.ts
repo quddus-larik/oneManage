@@ -151,7 +151,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
     // Remove from global employees
-    await users.updateOne({ email }, { $pull: { employees: { email: employeeEmail } } });
+    await users.updateOne({ email }, { $pull: { employees: { email: employeeEmail } } as any });
 
     // Clean from department employees
     const updatedDepartments = userDoc.departments.map((dept: any) => ({
