@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import Dashboard from "@/app/provider/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { IconBrandGoogleFilled } from "@tabler/icons-react";
 
 export default function Page() {
   const { user, isLoaded } = useUser();
+  const { signOut } = useClerk()
 
   if (!isLoaded) return <div className="p-8">Loading...</div>;
   if (!user) return <div className="p-8 text-red-500">User not found</div>;
@@ -67,7 +68,7 @@ export default function Page() {
           {/* Button Section */}
           <div className="flex justify-end mt-8">
             <Button className="px-6" variant={"outline"}><IconBrandGoogleFilled/>Google Connected</Button>
-            <Button className="px-6 ml-2">Logout</Button>
+            <Button className="px-6 ml-2" onClick={()=> signOut({ redirectUrl: '/' })}>Logout</Button>
           </div>
         </div>
       </div>

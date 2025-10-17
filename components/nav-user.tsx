@@ -1,10 +1,8 @@
 "use client"
 
 import {
-  IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
   IconUserCircle,
 } from "@tabler/icons-react"
 
@@ -28,6 +26,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useClerk } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 
 
 export function NavUser({
@@ -39,7 +39,9 @@ export function NavUser({
     avatar: string
   }
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+  const { signOut } = useClerk();
+  const router = useRouter()
 
   return (
     <SidebarMenu>
@@ -85,13 +87,13 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={()=> router.push("/profile")}>
                 <IconUserCircle />
-                Account
+                Profile
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={()=> signOut({ redirectUrl: '/' })}>
               <IconLogout />
               Log out
             </DropdownMenuItem>

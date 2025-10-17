@@ -37,7 +37,8 @@ export async function POST(req: Request) {
       role: "admin",
       createdAt: new Date(),
       departments: [],
-      employees: []
+      employees: [],
+      tasks: []
     }
 
     // 💾 Insert user into MongoDB
