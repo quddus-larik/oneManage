@@ -48,13 +48,11 @@ export async function POST(req: NextRequest) {
 
         const now = new Date();
 
-        // 1️⃣ Add to admin/user employees array
         await users.updateOne(
             { email },
             { $push: { employees: { ...employee, addedAt: now, updatedAt: now } } }
         );
 
-        // 2️⃣ Add to the specific department's employees array
         const deptIndex = userDoc.departments.findIndex((d: any) => d._id === employee.department);
         if (deptIndex !== -1) {
             const deptKey = `departments.${deptIndex}.employees`;
@@ -89,12 +87,10 @@ export async function PUT(req: NextRequest) {
 
         const now = new Date();
 
-        // Update in user employees array
         const updatedEmployees = (userDoc.employees || []).map((e: any) =>
             e.email === employee.email ? { ...e, ...employee, updatedAt: now } : e
         );
-
-        // Update in all departments
+        
         const updatedDepartments = userDoc.departments.map((dept: any) => {
             const updatedDeptEmployees = (dept.employees || []).map((e: any) =>
                 e.email === employee.email ? { ...e, ...employee, updatedAt: now } : e

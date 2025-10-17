@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
     const { db } = await mongoDB();
     const users = db.collection("users");
 
-    // Fetch user with only departments
     const dbUser = await users.findOne(
       { email },
       { projection: { departments: 1, _id: 0 } }
@@ -30,14 +29,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 🔹 Get query params
     const { searchParams } = new URL(req.url);
-    const depId = searchParams.get("id"); // ?id=departmentId
+    const depId = searchParams.get("id");
 
     let filteredDepartments = dbUser.departments || [];
 
     if (depId) {
-      // Filter departments by _id
       filteredDepartments = filteredDepartments.filter(
         (dep: any) => dep._id === depId
       );

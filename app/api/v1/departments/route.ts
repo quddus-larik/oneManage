@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest) {
     const userDoc = await users.findOne({ email });
     if (!userDoc) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
-    // Update selected employees for department
+    
     const selectedEmployees = (userDoc.employees || []).filter((emp: any) =>
       employeeEmails.includes(emp.email)
     ).map((emp: any) => ({ ...emp, addedAt: new Date(), updatedAt: new Date(), department: departmentId }));

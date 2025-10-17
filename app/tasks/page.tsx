@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { DropdownCheckboxes } from "@/components/custom/multiselect";
-import { Ellipsis, FilePlus, Plus } from "lucide-react";
+import { Ellipsis, FilePlus, Plus, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -363,7 +363,7 @@ export default function Page() {
 
                 <CardFooter className="flex justify-between items-center">
                   <span className="text-muted-foreground flex items-center gap-1">
-                    👥 {task.assigned.length} assignees
+                    <Users size={15}/> {task.assigned.length} assignees
                   </span>
 
                   <DropdownMenu>
