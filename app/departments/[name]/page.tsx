@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader } 
 import { DialogTitle, DialogTrigger } from "@radix-ui/react-dialog";
 import { Ellipsis, PenLine, Trash, Loader2 } from "lucide-react";
 import Dashboard from "@/app/provider/ui";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Page() {
   const searchParams = useSearchParams();
@@ -59,6 +60,7 @@ export default function Page() {
       try {
         const res = await fetch("/api/v1/employees");
         const data = await res.json();
+        
         if (data.success) setAllEmployees(data.data);
       } catch (err) {
         console.error(err);
@@ -224,10 +226,18 @@ export default function Page() {
                 </div>
                 <div className="grid gap-2">
                   <label>Type</label>
-                  <Input
-                    value={editDepartment.type}
-                    onChange={(e) => setEditDepartment({ ...editDepartment, type: e.target.value })}
-                  />
+                  <Select onValueChange={(value) => setEditDepartment({ ...editDepartment, type:value })} defaultValue="All">
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All</SelectItem>
+                      <SelectItem value="Technical">Technical</SelectItem>
+                      <SelectItem value="Administrative">Administrative</SelectItem>
+                      <SelectItem value="Creative">Creative</SelectItem>
+                      <SelectItem value="Business">Business</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2">
                   <label>Description</label>
