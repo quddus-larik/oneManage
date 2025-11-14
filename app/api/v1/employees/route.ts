@@ -12,10 +12,41 @@ export async function GET(req: NextRequest) {
     const { db } = await mongoDB();
     const users = db.collection("users");
 
-    const userDoc = await users.findOne(
-      { email },
-      { projection: { employees: 1, _id: 0 } }
-    );
+    const userDoc = await users.aggregate([
+  // 1. Match the document you want to find
+  { $match: { email: email } },
+
+  // 2. Project the 'employees' array
+  {
+    $project: {
+      _id: 0, // Exclude the top-level _id
+
+      employees: {
+        // Iterate over the 'employees' array
+        $map: {
+          input: "$employees",
+          as: "employee",
+          in: {
+            // Convert the employee object to an array of { k: key, v: value } objects
+            $arrayToObject: {
+              $filter: {
+                // Input is the array of key/value pairs
+                input: { $objectToArray: "$$employee" },
+                as: "field",
+                // Condition: Keep the field if its key (k) is NOT 'updatedAt' or 'createdAt'
+                cond: {
+                  $not: {
+                    $in: ["$$field.k", ["updatedAt", "addedAt"]]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+]).next(); 
 
     return NextResponse.json({
       success: true,
@@ -119,6 +150,8 @@ export async function PUT(req: NextRequest) {
       { email },
       { $set: { employees: updatedEmployees, departments: updatedDepartments, updatedAt: now } }
     );
+
+
 
     return NextResponse.json({
       success: true,
