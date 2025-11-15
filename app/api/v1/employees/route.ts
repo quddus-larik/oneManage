@@ -13,30 +13,32 @@ export async function GET(req: NextRequest) {
     const users = db.collection("users");
 
     const userDoc = await users.aggregate([
-  // 1. Match the document you want to find
-  { $match: { email: email } },
+      // 1. Match the document you want to find
+      { $match: { email: email } },
 
-  // 2. Project the 'employees' array
-  {
-    $project: {
-      _id: 0, // Exclude the top-level _id
+      // 2. Project the 'employees' array
+      {
+        $project: {
+          _id: 0, // Exclude the top-level _id
 
-      employees: {
-        // Iterate over the 'employees' array
-        $map: {
-          input: "$employees",
-          as: "employee",
-          in: {
-            // Convert the employee object to an array of { k: key, v: value } objects
-            $arrayToObject: {
-              $filter: {
-                // Input is the array of key/value pairs
-                input: { $objectToArray: "$$employee" },
-                as: "field",
-                // Condition: Keep the field if its key (k) is NOT 'updatedAt' or 'createdAt'
-                cond: {
-                  $not: {
-                    $in: ["$$field.k", ["updatedAt", "addedAt"]]
+          employees: {
+            // Iterate over the 'employees' array
+            $map: {
+              input: "$employees",
+              as: "employee",
+              in: {
+                // Convert the employee object to an array of { k: key, v: value } objects
+                $arrayToObject: {
+                  $filter: {
+                    // Input is the array of key/value pairs
+                    input: { $objectToArray: "$$employee" },
+                    as: "field",
+                    // Condition: Keep the field if its key (k) is NOT 'updatedAt' or 'createdAt'
+                    cond: {
+                      $not: {
+                        $in: ["$$field.k", ["updatedAt", "addedAt"]]
+                      }
+                    }
                   }
                 }
               }
@@ -44,9 +46,7 @@ export async function GET(req: NextRequest) {
           }
         }
       }
-    }
-  }
-]).next(); 
+    ]).next();
 
     return NextResponse.json({
       success: true,
@@ -133,18 +133,17 @@ export async function PUT(req: NextRequest) {
 
     const now = new Date();
 
-    // Update global employees
     const updatedEmployees = (userDoc.employees || []).map((e: any) =>
-      e.email === employee.email ? { ...e, ...employee, updatedAt: now } : e
+      e._id === employee._id ? { ...e, ...employee, updatedAt: now } : e
     );
 
-    // Sync departments: replace employee if matched
     const updatedDepartments = userDoc.departments.map((dept: any) => {
       const updatedDeptEmployees = (dept.employees || []).map((e: any) =>
-        e.email === employee.email ? { ...e, ...employee, updatedAt: now } : e
+        e._id === employee._id ? { ...e, ...employee, updatedAt: now } : e
       );
       return { ...dept, employees: updatedDeptEmployees };
     });
+
 
     await users.updateOne(
       { email },
