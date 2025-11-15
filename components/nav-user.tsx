@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/sidebar"
 import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
+import { MessageCircleWarning } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTrigger } from "./ui/dialog"
+import { Label } from "./ui/label"
 
 
 export function NavUser({
@@ -87,13 +90,17 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={()=> router.push("/profile")}>
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <IconUserCircle />
                 Profile
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={()=> signOut({ redirectUrl: '/' })}>
+            <DropdownMenuItem onClick={()=> router.push("/feedback")}>
+              <MessageCircleWarning />
+              Feedback
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut({ redirectUrl: '/' })}>
               <IconLogout />
               Log out
             </DropdownMenuItem>
