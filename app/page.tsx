@@ -31,7 +31,7 @@ export default function Home() {
         <div className="space-y-6">
           <Badge>Built for small teams</Badge>
           <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight">
-            oneManage — HR, Tasks, Payroll, all in one simple app
+            oneManage — HR, Tasks, Emails, all in one simple app
           </h2>
           <p className="text-muted-foreground max-w-xl">
             Run your team with clarity. Create tasks, assign employees and track completion, simple — all from a single dashboard built for founders, managers and small businesses.
