@@ -32,8 +32,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "../ui/separator";
 import { PenLine, Trash } from "lucide-react";
-import { Tooltip, TooltipContent } from "../ui/tooltip";
-import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { DialogContent, DialogTrigger } from "@radix-ui/react-dialog";
 
@@ -166,6 +164,7 @@ export function EmployeeTable() {
       });
       const data = await res.json();
       if (data.success) {
+        await fetchEmployees();
         setEmployees((prev) => prev.map((e) => (e.email === emp.email ? emp : e)));
         setIsDrawerOpen(false);
       }
