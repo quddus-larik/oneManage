@@ -3,12 +3,9 @@ import { mongoDB } from "@/lib/db"
 
 export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const name = searchParams.get("name")
-    const email = searchParams.get("email")
-    const avatar = searchParams.get("avatar")
+    const { name, email, avatar } = await req.json();
 
-    // 🧩 Validate input
+    // Validate input
     if (!name || !email) {
       return NextResponse.json(
         { success: false, message: "Name and Email are required." },
@@ -16,11 +13,20 @@ export async function POST(req: Request) {
       )
     }
 
-    // ⚙️ Connect to MongoDB
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid email format." },
+        { status: 400 }
+      );
+    }
+
+    // Connect to MongoDB
     const { db } = await mongoDB()
     const users = db.collection("users")
 
-    // 🔍 Check if user already exists by email
+    // Check if user already exists by email
     const existingUser = await users.findOne({ email })
     if (existingUser) {
       return NextResponse.json(
@@ -29,7 +35,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // 🧱 Create new user document
+    // Create new user document
     const newUser = {
       name,
       email,
@@ -41,7 +47,7 @@ export async function POST(req: Request) {
       tasks: []
     }
 
-    // 💾 Insert user into MongoDB
+    // Insert user into MongoDB
     const result = await users.insertOne(newUser)
 
     return NextResponse.json(

@@ -12,41 +12,9 @@ export async function GET(req: NextRequest) {
     const { db } = await mongoDB();
     const users = db.collection("users");
 
-    const userDoc = await users.aggregate([
-      // 1. Match the document you want to find
-      { $match: { email: email } },
-
-      // 2. Project the 'employees' array
-      {
-        $project: {
-          _id: 0, // Exclude the top-level _id
-
-          employees: {
-            // Iterate over the 'employees' array
-            $map: {
-              input: "$employees",
-              as: "employee",
-              in: {
-                // Convert the employee object to an array of { k: key, v: value } objects
-                $arrayToObject: {
-                  $filter: {
-                    // Input is the array of key/value pairs
-                    input: { $objectToArray: "$$employee" },
-                    as: "field",
-                    // Condition: Keep the field if its key (k) is NOT 'updatedAt' or 'createdAt'
-                    cond: {
-                      $not: {
-                        $in: ["$$field.k", ["updatedAt", "addedAt"]]
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    ]).next();
+    const userDoc = await users.findOne({ email });
+    if (!userDoc)
+      return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
     return NextResponse.json({
       success: true,
@@ -57,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ✅ ADD employee (no duplication)
+// ADD employee (no duplication)
 export async function POST(req: NextRequest) {
   try {
     const authUser = await currentUser();
@@ -71,6 +39,15 @@ export async function POST(req: NextRequest) {
         { success: false, message: "Employee email and department required" },
         { status: 400 }
       );
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(employee.email)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid email format" },
+        { status: 400 }
+      );
+    }
 
     const { db } = await mongoDB();
     const users = db.collection("users");
@@ -87,16 +64,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: false,
         message: "Employee with this email already exists",
-      });
+      }, { status: 409 });
     }
 
-    const newEmployee = { ...employee, addedAt: now, updatedAt: now };
+    const newEmployee = { _id: crypto.randomUUID(), ...employee, addedAt: now, updatedAt: now };
 
     // Add to global employees
     await users.updateOne({ email }, { $push: { employees: newEmployee } });
 
     // Add to correct department employees
-    const deptIndex = userDoc.departments.findIndex((d: any) => d._id === employee.department);
+    const deptIndex = (userDoc.departments || []).findIndex((d: any) => d._id === employee.department);
     if (deptIndex !== -1) {
       const deptKey = `departments.${deptIndex}.employees`;
       await users.updateOne({ email }, { $push: { [deptKey]: newEmployee } });
@@ -112,7 +89,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ✅ UPDATE employee (no duplication, full sync)
+// UPDATE employee (no duplication, full sync)
 export async function PUT(req: NextRequest) {
   try {
     const authUser = await currentUser();
@@ -121,8 +98,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
     const { employee } = await req.json();
-    if (!employee?.email)
-      return NextResponse.json({ success: false, message: "Employee email required" }, { status: 400 });
+    if (!employee?.email || !employee?._id)
+      return NextResponse.json({ success: false, message: "Employee email and ID required" }, { status: 400 });
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(employee.email)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid email format" },
+        { status: 400 }
+      );
+    }
 
     const { db } = await mongoDB();
     const users = db.collection("users");
@@ -162,7 +148,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// ✅ DELETE employee (clean remove)
+// DELETE employee (clean remove)
 export async function DELETE(req: NextRequest) {
   try {
     const authUser = await currentUser();

@@ -55,18 +55,27 @@ export async function POST(req: NextRequest) {
     if (!email) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
 
     const { title, description, priority, dueDate, assigned } = await req.json()
-    if (!title) return NextResponse.json({ success: false, message: "Task title required" }, { status: 400 })
+    
+    // Validate title
+    if (!title || !title.trim()) {
+      return NextResponse.json({ success: false, message: "Task title required" }, { status: 400 })
+    }
+
+    // Validate dueDate
+    if (!dueDate || isNaN(new Date(dueDate).getTime())) {
+      return NextResponse.json({ success: false, message: "Invalid due date" }, { status: 400 })
+    }
 
     const { db } = await mongoDB()
     const users = db.collection("users")
 
     const newTask = {
       _id: crypto.randomUUID(),
-      title,
-      description,
+      title: title.trim(),
+      description: description || "",
       priority: priority || "Low",
       dueDate: new Date(dueDate),
-      assigned: assigned.map((a: any) => ({ ...a, completed: false })),
+      assigned: (assigned || []).map((a: any) => ({ ...a, completed: false })),
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -89,6 +98,11 @@ export async function PUT(req: NextRequest) {
     const { taskId, title, description, priority, dueDate, assigned } = await req.json()
     if (!taskId) return NextResponse.json({ success: false, message: "Task ID required" }, { status: 400 })
 
+    // Validate dueDate if provided
+    if (dueDate && isNaN(new Date(dueDate).getTime())) {
+      return NextResponse.json({ success: false, message: "Invalid due date" }, { status: 400 })
+    }
+
     const { db } = await mongoDB()
     const users = db.collection("users")
 
@@ -99,7 +113,7 @@ export async function PUT(req: NextRequest) {
       t._id === taskId
         ? {
             ...t,
-            title: title ?? t.title,
+            title: title?.trim() ?? t.title,
             description: description ?? t.description,
             priority: priority ?? t.priority,
             dueDate: dueDate ? new Date(dueDate) : t.dueDate,

@@ -61,14 +61,28 @@ export async function PUT(req: NextRequest) {
 
     const usersCollection = await getCollection<UserDoc>("users");
 
-    // Update completed for all assigned users in the task
+    // Update completed status for the specific person's assignment
+    // First, find the task and update the assigned array
+    const userDoc = await usersCollection.findOne({ email: admin });
+    if (!userDoc) return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+
+    const taskIndex = userDoc.tasks.findIndex((t: any) => t._id === task_id);
+    if (taskIndex === -1) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+
+    // Update all assigned users' completed status
+    const updatedTasks = [...userDoc.tasks];
+    updatedTasks[taskIndex].assigned = updatedTasks[taskIndex].assigned.map((assigned: Assigned) => ({
+      ...assigned,
+      completed,
+    }));
+
     const updateResult = await usersCollection.updateOne(
-      { email: admin, "tasks._id": task_id },
-      { $set: { "tasks.$.assigned.$[].completed": completed } }
+      { email: admin },
+      { $set: { tasks: updatedTasks } }
     );
 
-    if (updateResult.matchedCount === 0) {
-      return NextResponse.json({ error: "Task or admin not found" }, { status: 404 });
+    if (updateResult.modifiedCount === 0) {
+      return NextResponse.json({ error: "No task was updated" }, { status: 404 });
     }
 
     return NextResponse.json({ message: "Task updated successfully" });

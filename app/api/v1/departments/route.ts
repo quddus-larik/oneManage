@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { mongoDB } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, type, description, professionalDetails, employees } = body;
 
-    if (!name) return NextResponse.json({ success: false, message: "Department name required" }, { status: 400 });
+    if (!name || !name.trim()) {
+      return NextResponse.json({ success: false, message: "Department name required" }, { status: 400 });
+    }
 
     const { db } = await mongoDB();
     const users = db.collection("users");
@@ -46,11 +48,11 @@ export async function POST(req: NextRequest) {
 
     const newDepartment = {
       _id: crypto.randomUUID(),
-      name,
+      name: name.trim(),
       type: type || "General",
       description: description || "",
       professionalDetails: professionalDetails || "",
-      employees,
+      employees: employees || [],
       createdAt: new Date(),
     };
 
@@ -73,7 +75,10 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     const { departmentId, name, type, description, professionalDetails, employeeEmails } = body;
+    
     if (!departmentId) return NextResponse.json({ success: false, message: "Department ID required" }, { status: 400 });
+    if (!name || !name.trim()) return NextResponse.json({ success: false, message: "Department name required" }, { status: 400 });
+    if (!employeeEmails) return NextResponse.json({ success: false, message: "Employee emails required" }, { status: 400 });
 
     const { db } = await mongoDB();
     const users = db.collection("users");
@@ -88,7 +93,7 @@ export async function PUT(req: NextRequest) {
 
     const updatedDepartments = (userDoc.departments || []).map((dept: any) =>
       dept._id === departmentId
-        ? { ...dept, name, type, description, professionalDetails, employees: selectedEmployees }
+        ? { ...dept, name: name.trim(), type, description, professionalDetails, employees: selectedEmployees }
         : dept
     );
 
