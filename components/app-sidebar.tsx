@@ -59,14 +59,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
     const addUser = async () => {
       try {
-        const query = new URLSearchParams({
-          name: userData.name,
-          email: userData.email,
-          avatar: userData.avatar,
-        })
-
-        const res = await fetch(`/api/v1/init-user?${query.toString()}`, {
+        const res = await fetch(`/api/v1/init-user`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: userData.name,
+            email: userData.email,
+            avatar: userData.avatar,
+          }),
         })
 
         if (!res.ok) throw new Error("Failed to initialize user")
