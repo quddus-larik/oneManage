@@ -41,11 +41,15 @@ export default function Page() {
     const fetchDepartment = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/v1/departments/name?id=${encodeURIComponent(id)}`);
+        const res = await fetch(`/api/v1/departments`);
         const data = await res.json();
-        if (data.success && data.data.length > 0) {
-          setDepartment(data.data[0]);
-          setSelectedEmployees((data.data[0].employees || []).map((e: any) => e.email));
+        if (data.success) {
+          const dept = data.data.find((d: any) => d.id === id);
+          if (dept) {
+            setDepartment(dept);
+          } else {
+            setError("Department not found.");
+          }
         } else {
           setError(data.message || "Department not found.");
         }
@@ -61,7 +65,12 @@ export default function Page() {
         const res = await fetch("/api/v1/employees");
         const data = await res.json();
         
-        if (data.success) setAllEmployees(data.data);
+        if (data.success) {
+          setAllEmployees(data.data);
+          // Filter employees that belong to this department
+          const deptEmployees = data.data.filter((e: any) => e.department_id === id);
+          setSelectedEmployees(deptEmployees.map((e: any) => e.id));
+        }
       } catch (err) {
         console.error(err);
       }
@@ -73,7 +82,7 @@ export default function Page() {
 
   const openEditDrawer = () => {
     setEditDepartment({ ...department });
-    setSelectedEmployees((department.employees || []).map((e: any) => e.email));
+    // selectedEmployees is already set correctly from fetchEmployees
     setIsDrawerOpen(true);
   };
 
@@ -85,8 +94,7 @@ export default function Page() {
         name: editDepartment.name,
         type: editDepartment.type,
         description: editDepartment.description,
-        professionalDetails: editDepartment.professionalDetails,
-        employeeEmails: selectedEmployees,
+        professionalDetails: editDepartment.professional_details || editDepartment.professionalDetails,
       };
       const res = await fetch("/api/v1/departments", {
         method: "PUT",
@@ -95,6 +103,49 @@ export default function Page() {
       });
       const data = await res.json();
       if (data.success) {
+        // Get the current employees in this department (from allEmployees)
+        const currentEmployeeIds = allEmployees
+          .filter((e: any) => e.department_id === id)
+          .map((e: any) => e.id);
+        
+        // Determine which employees to add and which to remove
+        const employeesToAdd = selectedEmployees.filter((eId) => !currentEmployeeIds.includes(eId));
+        const employeesToRemove = currentEmployeeIds.filter((eId) => !selectedEmployees.includes(eId));
+
+        // Add employees to department
+        for (const employeeId of employeesToAdd) {
+          const employee = allEmployees.find((e) => e.id === employeeId);
+          if (employee) {
+            await fetch("/api/v1/employees", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                employee: {
+                  ...employee,
+                  department_id: id,
+                },
+              }),
+            });
+          }
+        }
+
+        // Remove employees from department
+        for (const employeeId of employeesToRemove) {
+          const employee = allEmployees.find((e) => e.id === employeeId);
+          if (employee) {
+            await fetch("/api/v1/employees", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                employee: {
+                  ...employee,
+                  department_id: null,
+                },
+              }),
+            });
+          }
+        }
+
         setDepartment(data.data);
         setIsDrawerOpen(false);
       } else {
@@ -132,164 +183,175 @@ export default function Page() {
 
   return (
     <Dashboard>
-      <div className="p-6 space-y-4">
-        <TitleHeader label={department.name} span={department.description} />
-        <div className="flex flex-col lg:flex-row gap-3 ">
-          <Badge variant={"outline"}>
-            <p className="text-sm">Type: {department.type}</p>
-          </Badge>
-          <Badge variant={"outline"}>
-            <p className="text-sm">Created: {new Date(department.createdAt).toLocaleString()}</p>
-          </Badge>
+      <div className="flex gap-6 flex-col p-4 lg:p-8 h-full">
+        {/* Header Section */}
+        <div className="space-y-2">
+          <TitleHeader label={department.name} span={department.description} />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-1 ">
-          <Button onClick={openEditDrawer}>
-            <PenLine className="mr-2 h-4 w-4" /> Edit department
-          </Button>
+        {/* Main Content */}
+        <div className="flex-1 bg-gradient-to-br from-background to-muted/30 rounded-lg border border-border/50 p-6 overflow-y-auto">
+          {/* Department Info */}
+          <div className="flex flex-col lg:flex-row gap-3 mb-6">
+            <Badge variant={"outline"}>
+              <p className="text-sm">Type: {department.type}</p>
+            </Badge>
+            <Badge variant={"outline"}>
+              <p className="text-sm">Created: {new Date(department.created_at).toLocaleString()}</p>
+            </Badge>
+          </div>
 
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant={"outline"} size={"icon"}>
-                <Trash />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Danger Zone</DialogTitle>
-                <DialogDescription>Are you sure you want to delete this department?</DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant={"destructive"}
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
+          {/* Action Buttons */}
+          <div className="flex flex-col lg:flex-row gap-2 mb-6">
+            <Button onClick={openEditDrawer}>
+              <PenLine className="mr-2 h-4 w-4" /> Edit department
+            </Button>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant={"outline"} size={"icon"}>
+                  <Trash />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Danger Zone</DialogTitle>
+                  <DialogDescription>Are you sure you want to delete this department?</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant={"destructive"}
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
+                      </>
+                    ) : (
+                      "Delete"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Employees Table */}
+          <h3 className="text-lg font-semibold mb-4">Department Employees</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Phone</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allEmployees.filter((e: any) => e.department_id === id).length > 0 ? (
+                allEmployees
+                  .filter((e: any) => e.department_id === id)
+                  .map((emp: any) => (
+                    <TableRow key={emp.id}>
+                      <TableCell>{emp.name}</TableCell>
+                      <TableCell>{emp.email}</TableCell>
+                      <TableCell>{emp.position || "-"}</TableCell>
+                      <TableCell>{emp.phone || "-"}</TableCell>
+                    </TableRow>
+                  ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No employees assigned
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          {/* Drawer for Update */}
+          <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+            <DrawerContent className="sm:max-w-[600px] border-l bg-background ml-2 flex flex-col h-[90vh]">
+              <DrawerHeader>
+                <DrawerTitle>Edit Department</DrawerTitle>
+              </DrawerHeader>
+              <Separator />
+              {editDepartment && (
+                <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
+                  <div className="grid gap-2">
+                    <label>Name</label>
+                    <Input
+                      value={editDepartment.name}
+                      onChange={(e) => setEditDepartment({ ...editDepartment, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label>Type</label>
+                    <Select value={editDepartment.type} onValueChange={(value) => setEditDepartment({ ...editDepartment, type: value })}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Technical">Technical</SelectItem>
+                        <SelectItem value="Administrative">Administrative</SelectItem>
+                        <SelectItem value="Creative">Creative</SelectItem>
+                        <SelectItem value="Business">Business</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <label>Description</label>
+                    <Textarea
+                      value={editDepartment.description}
+                      onChange={(e) =>
+                        setEditDepartment({ ...editDepartment, description: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label>Professional Details</label>
+                    <Textarea
+                      value={editDepartment.professionalDetails}
+                      onChange={(e) =>
+                        setEditDepartment({
+                          ...editDepartment,
+                          professionalDetails: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for employees */}
+                  <div className="grid gap-2 mt-2">
+                    <label>Select Employees</label>
+                    <DropdownCheckboxes
+                      items={allEmployees.map((emp) => ({ id: emp.id, name: emp.name }))}
+                      onChange={setSelectedEmployees}
+                      selected={selectedEmployees}
+                      span="Employees"
+                    />
+                  </div>
+                </div>
+              )}
+              <Separator />
+              <DrawerFooter>
+                <Button onClick={handleUpdate} disabled={isUpdating}>
+                  {isUpdating ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
                     </>
                   ) : (
-                    "Delete"
+                    "Save Changes"
                   )}
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DrawerClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
         </div>
-
-        {/* Employees Table */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Salary</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {department.employees && department.employees.length ? (
-              department.employees.map((emp: any) => (
-                <TableRow key={emp.email}>
-                  <TableCell>{emp.name}</TableCell>
-                  <TableCell>{emp.email}</TableCell>
-                  <TableCell>{emp.phone || "-"}</TableCell>
-                  <TableCell>{emp.salary || "-"}</TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                  No employees assigned
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-
-        {/* Drawer for Update */}
-        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-          <DrawerContent className="sm:max-w-[600px] border-l bg-background ml-2">
-            <DrawerHeader>
-              <DrawerTitle>Edit Department</DrawerTitle>
-            </DrawerHeader>
-            <Separator />
-            {editDepartment && (
-              <div className="px-4 pb-4 space-y-3 max-h-[70vh] overflow-y-auto">
-                <div className="grid gap-2">
-                  <label>Name</label>
-                  <Input
-                    value={editDepartment.name}
-                    onChange={(e) => setEditDepartment({ ...editDepartment, name: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label>Type</label>
-                  <Select onValueChange={(value) => setEditDepartment({ ...editDepartment, type:value })} defaultValue="All">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">All</SelectItem>
-                      <SelectItem value="Technical">Technical</SelectItem>
-                      <SelectItem value="Administrative">Administrative</SelectItem>
-                      <SelectItem value="Creative">Creative</SelectItem>
-                      <SelectItem value="Business">Business</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <label>Description</label>
-                  <Textarea
-                    value={editDepartment.description}
-                    onChange={(e) =>
-                      setEditDepartment({ ...editDepartment, description: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label>Professional Details</label>
-                  <Textarea
-                    value={editDepartment.professionalDetails}
-                    onChange={(e) =>
-                      setEditDepartment({
-                        ...editDepartment,
-                        professionalDetails: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                {/* Multi-select for employees */}
-                <div className="grid gap-2 mt-2">
-                  <label>Select Employees</label>
-                  <DropdownCheckboxes
-                    items={allEmployees.map((emp) => ({ id: emp.email, name: emp.name }))}
-                    onChange={setSelectedEmployees}
-                    selected={selectedEmployees}
-                    span="Employees"
-                  />
-                </div>
-              </div>
-            )}
-            <Separator />
-            <DrawerFooter>
-              <Button onClick={handleUpdate} disabled={isUpdating}>
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
       </div>
     </Dashboard>
   );
