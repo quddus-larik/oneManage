@@ -50,7 +50,7 @@ type Employee = {
 };
 
 type Department = {
-  _id: string;
+  id: string;
   name: string;
 };
 
@@ -228,7 +228,7 @@ export function EmployeeTable() {
                 <TableCell>{emp.email}</TableCell>
                 <TableCell>{emp.phone}</TableCell>
                 <TableCell>{emp.role}</TableCell>
-                <TableCell>{departments.find((d) => d._id === emp.department)?.name || ""}</TableCell>
+                <TableCell>{departments.find((d) => d.id === emp.department)?.name || ""}</TableCell>
                 <TableCell>{emp.salary}</TableCell>
                 <TableCell className="text-right space-x-2">
 
@@ -304,7 +304,7 @@ export function EmployeeTable() {
                       </SelectTrigger>
                       <SelectContent>
                         {departments.map((d) => (
-                          <SelectItem key={d._id} value={d._id}>
+                          <SelectItem key={d.id} value={d.id}>
                             {d.name}
                           </SelectItem>
                         ))}
@@ -390,7 +390,7 @@ export function EmployeeTable() {
                       </SelectTrigger>
                       <SelectContent>
                         {departments.map((d) => (
-                          <SelectItem key={d._id} value={d._id}>
+                          <SelectItem key={d.id} value={d.id}>
                             {d.name}
                           </SelectItem>
                         ))}
