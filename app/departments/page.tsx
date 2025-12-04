@@ -51,7 +51,7 @@ export default function DepartmentsPage() {
 
     const fetchDepartments = async () => {
       try {
-        const res = await fetch(`/api/v1/departments`);
+        const res = await fetch(`/api/v1/departments`, { cache: "force-cache" });
         const data = await res.json();
         if (data.success) setDepartments(data.data);
       } catch (err) {
@@ -61,7 +61,7 @@ export default function DepartmentsPage() {
 
     const fetchEmployees = async () => {
       try {
-        const res = await fetch("/api/v1/employees");
+        const res = await fetch("/api/v1/employees",{ cache: "force-cache" });
         const data = await res.json();
         if (data.success) setEmployees(data.data);
       } catch (err) {
@@ -108,6 +108,7 @@ export default function DepartmentsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        cache: "force-cache"
       });
 
       const data = await res.json();
@@ -118,6 +119,7 @@ export default function DepartmentsPage() {
             const employee = employees.find((e) => e.id === employeeId);
             if (employee) {
               await fetch("/api/v1/employees", {
+                cache: "force-cache",
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
