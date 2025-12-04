@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mongoDB } from "@/lib/db";
+import { supabase, getUserByEmail } from "@/lib/supabase";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
@@ -9,23 +9,26 @@ export async function GET(req: NextRequest) {
     if (!email)
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-    const { db } = await mongoDB();
-    const users = db.collection("users");
-
-    const userDoc = await users.findOne({ email });
-    if (!userDoc)
+    const user = await getUserByEmail(email);
+    if (!user)
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
+
+    const { data: employees, error } = await supabase
+      .from("employees")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
-      data: userDoc?.employees || [],
+      data: employees || [],
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
 
-// ADD employee (no duplication)
 export async function POST(req: NextRequest) {
   try {
     const authUser = await currentUser();
@@ -34,13 +37,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
     const { employee } = await req.json();
-    if (!employee?.email || !employee?.department)
+    if (!employee?.email)
       return NextResponse.json(
-        { success: false, message: "Employee email and department required" },
+        { success: false, message: "Employee email required" },
         { status: 400 }
       );
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(employee.email)) {
       return NextResponse.json(
@@ -49,35 +51,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { db } = await mongoDB();
-    const users = db.collection("users");
-
-    const userDoc = await users.findOne({ email });
-    if (!userDoc)
+    const user = await getUserByEmail(email);
+    if (!user)
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
-    const now = new Date();
+    const { data: existing } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("email", employee.email)
+      .single();
 
-    // Check if already exists
-    const exists = (userDoc.employees || []).some((e: any) => e.email === employee.email);
-    if (exists) {
+    if (existing) {
       return NextResponse.json({
         success: false,
         message: "Employee with this email already exists",
       }, { status: 409 });
     }
 
-    const newEmployee = { _id: crypto.randomUUID(), ...employee, addedAt: now, updatedAt: now };
+    const { data: newEmployee, error } = await supabase
+      .from("employees")
+      .insert([{
+        user_id: user.id,
+        department_id: employee.department_id || null,
+        name: employee.name || "",
+        email: employee.email,
+        position: employee.position || null,
+        phone: employee.phone || null,
+      }])
+      .select()
+      .single();
 
-    // Add to global employees
-    await users.updateOne({ email }, { $push: { employees: newEmployee } });
-
-    // Add to correct department employees
-    const deptIndex = (userDoc.departments || []).findIndex((d: any) => d._id === employee.department);
-    if (deptIndex !== -1) {
-      const deptKey = `departments.${deptIndex}.employees`;
-      await users.updateOne({ email }, { $push: { [deptKey]: newEmployee } });
-    }
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
@@ -89,7 +94,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// UPDATE employee (no duplication, full sync)
 export async function PUT(req: NextRequest) {
   try {
     const authUser = await currentUser();
@@ -98,10 +102,9 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
     const { employee } = await req.json();
-    if (!employee?.email || !employee?._id)
+    if (!employee?.email || !employee?.id)
       return NextResponse.json({ success: false, message: "Employee email and ID required" }, { status: 400 });
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(employee.email)) {
       return NextResponse.json(
@@ -110,45 +113,37 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { db } = await mongoDB();
-    const users = db.collection("users");
-
-    const userDoc = await users.findOne({ email });
-    if (!userDoc)
+    const user = await getUserByEmail(email);
+    if (!user)
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
-    const now = new Date();
+    const { data: updatedEmployee, error } = await supabase
+      .from("employees")
+      .update({
+        name: employee.name || "",
+        email: employee.email,
+        position: employee.position || null,
+        phone: employee.phone || null,
+        department_id: employee.department_id || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", employee.id)
+      .eq("user_id", user.id)
+      .select()
+      .single();
 
-    const updatedEmployees = (userDoc.employees || []).map((e: any) =>
-      e._id === employee._id ? { ...e, ...employee, updatedAt: now } : e
-    );
-
-    const updatedDepartments = userDoc.departments.map((dept: any) => {
-      const updatedDeptEmployees = (dept.employees || []).map((e: any) =>
-        e._id === employee._id ? { ...e, ...employee, updatedAt: now } : e
-      );
-      return { ...dept, employees: updatedDeptEmployees };
-    });
-
-
-    await users.updateOne(
-      { email },
-      { $set: { employees: updatedEmployees, departments: updatedDepartments, updatedAt: now } }
-    );
-
-
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
       message: "Employee updated successfully",
-      data: employee,
+      data: updatedEmployee,
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
 
-// DELETE employee (clean remove)
 export async function DELETE(req: NextRequest) {
   try {
     const authUser = await currentUser();
@@ -157,30 +152,21 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const employeeEmail = searchParams.get("employeeEmail");
-    if (!employeeEmail)
-      return NextResponse.json({ success: false, message: "Employee email required" }, { status: 400 });
+    const employeeId = searchParams.get("id");
+    if (!employeeId)
+      return NextResponse.json({ success: false, message: "Employee ID required" }, { status: 400 });
 
-    const { db } = await mongoDB();
-    const users = db.collection("users");
-
-    const userDoc = await users.findOne({ email });
-    if (!userDoc)
+    const user = await getUserByEmail(email);
+    if (!user)
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
 
-    // Remove from global employees
-    await users.updateOne({ email }, { $pull: { employees: { email: employeeEmail } } as any });
+    const { error } = await supabase
+      .from("employees")
+      .delete()
+      .eq("id", employeeId)
+      .eq("user_id", user.id);
 
-    // Clean from department employees
-    const updatedDepartments = userDoc.departments.map((dept: any) => ({
-      ...dept,
-      employees: (dept.employees || []).filter((e: any) => e.email !== employeeEmail),
-    }));
-
-    await users.updateOne(
-      { email },
-      { $set: { departments: updatedDepartments, updatedAt: new Date() } }
-    );
+    if (error) throw error;
 
     return NextResponse.json({ success: true, message: "Employee deleted successfully" });
   } catch (err: any) {

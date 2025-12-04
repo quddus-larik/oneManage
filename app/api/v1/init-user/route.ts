@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
-import { mongoDB } from "@/lib/db"
+import { getUserByEmail, createUser } from "@/lib/supabase"
 
 export async function POST(req: Request) {
   try {
     const { name, email, avatar } = await req.json();
 
-    // Validate input
     if (!name || !email) {
       return NextResponse.json(
         { success: false, message: "Name and Email are required." },
@@ -13,7 +12,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -22,39 +20,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Connect to MongoDB
-    const { db } = await mongoDB()
-    const users = db.collection("users")
-
-    // Check if user already exists by email
-    const existingUser = await users.findOne({ email })
+    const existingUser = await getUserByEmail(email)
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "User with this email already exists." },
-        { status: 409 } // Conflict
+        { success: true, message: "User already exists.", data: existingUser },
+        { status: 200 }
       )
     }
 
-    // Create new user document
-    const newUser = {
-      name,
-      email,
-      avatar: avatar || null,
-      role: "admin",
-      createdAt: new Date(),
-      departments: [],
-      employees: [],
-      tasks: []
-    }
-
-    // Insert user into MongoDB
-    const result = await users.insertOne(newUser)
+    const newUser = await createUser(name, email, avatar || null)
 
     return NextResponse.json(
       {
         success: true,
         message: "User added successfully.",
-        data: { _id: result.insertedId, ...newUser },
+        data: newUser,
       },
       { status: 201 }
     )

@@ -1,29 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCollection } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 
 interface Assigned {
+  id: string;
   name: string;
   email: string;
   completed?: boolean;
 }
 
 interface Task {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   priority: string;
-  dueDate: Date;
-  assigned: Assigned[];
+  due_date: string;
 }
 
 interface UserDoc {
-  _id: string;
+  id: string;
   name: string;
   email: string;
-  tasks: Task[];
 }
 
-// GET method - fetch a task by admin email and task_id
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const admin = url.searchParams.get("admin");
@@ -34,22 +32,35 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const usersCollection = await getCollection<UserDoc>("users");
-    const adminDoc = await usersCollection.findOne({ email: admin });
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", admin)
+      .single();
 
-    if (!adminDoc) return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+    if (userError || !user) return NextResponse.json({ error: "Admin not found" }, { status: 404 });
 
-    const task = adminDoc.tasks.find((t: any) => t._id === task_id);
-    if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    const { data: task, error: taskError } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("id", task_id)
+      .eq("user_id", user.id)
+      .single();
 
-    return NextResponse.json({ task });
+    if (taskError || !task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+
+    const { data: assignments } = await supabase
+      .from("task_assignments")
+      .select("*, employees(*)")
+      .eq("task_id", task_id);
+
+    return NextResponse.json({ task: { ...task, assigned: assignments || [] } });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-// PUT method - update completed status of task
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
@@ -59,30 +70,37 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "admin, task_id, and completed required" }, { status: 400 });
     }
 
-    const usersCollection = await getCollection<UserDoc>("users");
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", admin)
+      .single();
 
-    // Update completed status for the specific person's assignment
-    // First, find the task and update the assigned array
-    const userDoc = await usersCollection.findOne({ email: admin });
-    if (!userDoc) return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+    if (userError || !user) return NextResponse.json({ error: "Admin not found" }, { status: 404 });
 
-    const taskIndex = userDoc.tasks.findIndex((t: any) => t._id === task_id);
-    if (taskIndex === -1) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    const { data: task, error: taskError } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("id", task_id)
+      .eq("user_id", user.id)
+      .single();
 
-    // Update all assigned users' completed status
-    const updatedTasks = [...userDoc.tasks];
-    updatedTasks[taskIndex].assigned = updatedTasks[taskIndex].assigned.map((assigned: Assigned) => ({
-      ...assigned,
-      completed,
-    }));
+    if (taskError || !task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-    const updateResult = await usersCollection.updateOne(
-      { email: admin },
-      { $set: { tasks: updatedTasks } }
-    );
+    const { data: assignments, error: assignError } = await supabase
+      .from("task_assignments")
+      .select("*")
+      .eq("task_id", task_id);
 
-    if (updateResult.modifiedCount === 0) {
-      return NextResponse.json({ error: "No task was updated" }, { status: 404 });
+    if (assignError) throw assignError;
+
+    if (assignments && assignments.length > 0) {
+      const { error: updateError } = await supabase
+        .from("task_assignments")
+        .update({ completed, completed_at: completed ? new Date().toISOString() : null })
+        .eq("task_id", task_id);
+
+      if (updateError) throw updateError;
     }
 
     return NextResponse.json({ message: "Task updated successfully" });

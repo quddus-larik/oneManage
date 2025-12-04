@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import { mongoDB } from "@/lib/db";
+import { supabase, getUserByEmail } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,14 +14,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { db } = await mongoDB();
-    const users = db.collection("users");
-
-    const dbUser = await users.findOne(
-      { email },
-      { projection: { departments: 1, _id: 0 } }
-    );
-
+    const dbUser = await getUserByEmail(email);
     if (!dbUser) {
       return NextResponse.json(
         { success: false, message: "User not found." },
@@ -32,18 +25,23 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const depId = searchParams.get("id");
 
-    let filteredDepartments = dbUser.departments || [];
+    let query = supabase
+      .from("departments")
+      .select("*")
+      .eq("user_id", dbUser.id);
 
     if (depId) {
-      filteredDepartments = filteredDepartments.filter(
-        (dep: any) => dep._id === depId
-      );
+      query = query.eq("id", depId);
     }
+
+    const { data: departments, error } = await query;
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
-      count: filteredDepartments.length,
-      data: filteredDepartments,
+      count: departments?.length || 0,
+      data: departments || [],
     });
   } catch (error: any) {
     console.error("❌ Error fetching departments:", error);
