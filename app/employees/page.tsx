@@ -313,7 +313,7 @@ export default function Page() {
                       </Button>
                       <Dialog open={deleteDialog.isOpen && deleteDialog.email === emp.email} onOpenChange={(open) => {
                         if (!open) {
-                          setDeleteDialog({ isOpen: false, email: "", name: "" });
+                          setDeleteDialog({ isOpen: false, id: "", email: "", name: "" });
                         }
                       }}>
                         <DialogTrigger asChild>

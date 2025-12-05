@@ -21,7 +21,7 @@ export default function Page() {
             const data = await res.json();
             setFeedback("");
         } catch (err) {
-            console.log("Error:", err);
+            console.error("Error:", err);
         }
     };
 

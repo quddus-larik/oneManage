@@ -70,7 +70,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         })
 
         if (!res.ok) throw new Error("Failed to initialize user")
-        console.log("User initialized successfully")
+        console.warn("User initialized successfully")
       } catch (error) {
         console.error("User init error:", error)
       }

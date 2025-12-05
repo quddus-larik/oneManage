@@ -90,7 +90,8 @@ export default function DepartmentsPage() {
       return matchesSearch && matchesFilter;
     });
   }, [departmentsWithCounts, search, filter]);
-  console.log(filteredDepartments)
+
+  // debug console.log(filteredDepartments)
 
   // Save new department
   const handleSave = async () => {
