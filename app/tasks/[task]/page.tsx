@@ -9,6 +9,7 @@ import { useUser } from "@clerk/nextjs";
 import Dashboard from "@/app/provider/ui";
 
 interface Assigned {
+  id?: string;
   name: string;
   email: string;
   avatar?: string;
@@ -16,12 +17,12 @@ interface Assigned {
 }
 
 interface Task {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   priority: "Low" | "Medium" | "High";
   assigned: Assigned[];
-  dueDate: string;
+  due_date: string;
 }
 
 export default function Page() {
@@ -42,10 +43,10 @@ export default function Page() {
     const fetchTask = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/v1/tasks/update?admin=${admin}&task_id=${id}`);
+        const res = await fetch(`/api/v1/tasks?id=${id}`);
         if (!res.ok) throw new Error(`Failed to fetch task: ${res.status}`);
         const data = await res.json();
-        if (data.task) setTask(data.task);
+        if (data.success && data.data) setTask(data.data);
         else setError("Task not found.");
       } catch (err: any) {
         setError(err.message || "Unknown error occurred");
@@ -59,12 +60,13 @@ export default function Page() {
   }, [id, admin]);
 
   const notifyEmployee = async (employeeEmail: string) => {
-    if (!admin || !id) return;
+    if (!id) return;
     setSendingEmail(employeeEmail);
 
     try {
       const res = await fetch(
-        `/api/v1/tasks/notify?admin=${admin}&email=${employeeEmail}&task_id=${id}`
+        `/api/v1/tasks/notify?id=${id}&email=${employeeEmail}`,
+        { method: "POST" }
       );
       const data = await res.json();
       if (res.ok) {
@@ -88,44 +90,49 @@ export default function Page() {
 
   return (
     <Dashboard>
-      <div className="p-4 lg:p-6 space-y-6">
-        {/* Task Header */}
-        <TitleHeader label={task.title} span={task.description} />
-
-        {/* Task Info */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Badge variant={task.priority === "High" ? "destructive" : task.priority === "Medium" ? "secondary" : "default"}>
-              Priority: {task.priority}
-            </Badge>
-            <Badge variant="outline">Due: {formatDate(task.dueDate)}</Badge>
-          </div>
+      <div className="flex gap-6 flex-col p-4 lg:p-8 h-full">
+        {/* Header Section */}
+        <div className="space-y-2">
+          <TitleHeader label={task.title} span={task.description} />
         </div>
 
-        {/* Assigned Employees */}
-        <div className="mt-4 space-y-3">
-          <h3 className="text-lg font-semibold">Assigned Employees</h3>
-          <div className="flex flex-col gap-2">
-            {task.assigned.map((emp) => (
-              <div
-                key={emp.email}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border rounded-md"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <Badge>{emp.name}</Badge>
-                  <Badge variant={emp.completed ? "outline" : "destructive"}>
-                    {emp.completed ? "Completed" : "Incomplete"}
-                  </Badge>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => notifyEmployee(emp.email)}
-                  disabled={sendingEmail === emp.email}
+        {/* Main Content */}
+        <div className="flex-1 bg-gradient-to-br from-background to-muted/30 rounded-lg border border-border/50 p-6 overflow-y-auto">
+          {/* Task Info */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Badge variant={task.priority === "High" ? "destructive" : task.priority === "Medium" ? "secondary" : "default"}>
+                Priority: {task.priority}
+              </Badge>
+              <Badge variant="outline">Due: {formatDate(task.due_date)}</Badge>
+            </div>
+          </div>
+
+          {/* Assigned Employees */}
+          <div className="mt-4 space-y-3">
+            <h3 className="text-lg font-semibold">Assigned Employees</h3>
+            <div className="flex flex-col gap-2">
+              {task.assigned.map((emp) => (
+                <div
+                  key={emp.email}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border rounded-md hover:bg-muted/30 transition-colors"
                 >
-                  {sendingEmail === emp.email ? "Sending..." : `Notify ${emp.name}`}
-                </Button>
-              </div>
-            ))}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <Badge>{emp.name}</Badge>
+                    <Badge variant={emp.completed ? "outline" : "destructive"}>
+                      {emp.completed ? "Completed" : "Incomplete"}
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => notifyEmployee(emp.email)}
+                    disabled={sendingEmail === emp.email}
+                  >
+                    {sendingEmail === emp.email ? "Sending..." : `Notify ${emp.name}`}
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
