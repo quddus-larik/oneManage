@@ -14,7 +14,7 @@ OpenSource Employee Management System specifically design for Small Businesses a
 5. NextJS lts
 6. Shadcn UI lts
 7. Clerk Authentication/Authorization
-8. MongoDB
+8. SupabaseDB
 
 ## Deployment Stack
 1. Vercel (Frontend/functions)
