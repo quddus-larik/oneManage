@@ -4,6 +4,7 @@ import * as React from "react";
 import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChevronDown, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -12,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "../ui/badge";
 
 type Checked = DropdownMenuCheckboxItemProps["checked"];
 
@@ -61,30 +63,65 @@ export function DropdownCheckboxes({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          {span} {selectedCount > 0 ? `(${selectedCount}) selected` : ""}
+        <Button
+          variant="outline"
+          className="w-full justify-between px-3 py-2 h-10 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+        >
+          <span className="flex items-center gap-2 truncate">
+            {span && <span className="font-medium">{span}</span>}
+            {selectedCount > 0 ? (
+              <Badge>
+                {selectedCount}
+              </Badge>
+            ) : (
+              <Badge variant={"outline"} className="text-sm text-muted-foreground">Select items</Badge>
+            )}
+          </span>
+          <ChevronDown className="h-4 w-4 opacity-50 ml-2 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-60 p-2">
-        <DropdownMenuLabel>{label}</DropdownMenuLabel>
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <DropdownMenuLabel className="mb-0">{label}</DropdownMenuLabel>
+          {selectedCount > 0 && (
+            <Button
+              onClick={() => {
+                setCheckedState({});
+                if (onChange) onChange([]);
+              }}
+              size={"sm"}
+              variant={"link"}
+            >
+              Clear all
+            </Button>
+          )}
+        </div>
         <DropdownMenuSeparator />
-        {/* Search Input */}
         <Input
           placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mb-2"
+          className="mb-2 h-8"
         />
-        {filteredItems.map((item) => (
-          <DropdownMenuCheckboxItem
-            key={item.id}
-            checked={checkedState[item.id]}
-            onCheckedChange={(value) => handleChange(item.id, value)}
-            disabled={item.disabled}
-          >
-            {item.name}
-          </DropdownMenuCheckboxItem>
-        ))}
+        <div className="max-h-64 overflow-y-auto">
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
+              <DropdownMenuCheckboxItem
+                key={item.id}
+                checked={checkedState[item.id]}
+                onCheckedChange={(value) => handleChange(item.id, value)}
+                disabled={item.disabled}
+                className="cursor-pointer"
+              >
+                {item.name}
+              </DropdownMenuCheckboxItem>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No items found
+            </p>
+          )}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
