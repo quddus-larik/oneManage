@@ -58,7 +58,7 @@ export default function Page() {
   const newMembers = employees.filter((emp) => {
     if (!emp.added_at) return false;
     const diff = Date.now() - new Date(emp.added_at).getTime();
-    return diff / (1000 * 60 * 60 * 24) <= 30;
+    return diff / (1000 * 60 * 60 * 24) <= 15;
   }).length;
 
   const growthRate =
