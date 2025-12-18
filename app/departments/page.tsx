@@ -20,7 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { ArrowUpRight, Loader2, Users } from "lucide-react";
+import { ArrowUpRight, Loader, Loader2, Users } from "lucide-react";
 import { DropdownCheckboxes } from "@/components/custom/multiselect";
 import Dashboard from "@/app/provider/ui";
 
@@ -277,7 +277,7 @@ export default function DepartmentsPage() {
           </div>
 
           {/* Departments Grid */}
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {filteredDepartments.length > 0 ? (
               filteredDepartments.map((dept) => (
                 <Card
@@ -302,7 +302,7 @@ export default function DepartmentsPage() {
                   <CardContent className="space-y-3">
                     <p className="text-sm text-muted-foreground line-clamp-3">{dept.description}</p>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex w-full gap-2"><Users className="size-4"/> {dept.length} {dept.length === 1 ? 'employee' : 'employees'}</span>
+                      <span className="text-muted-foreground flex w-full gap-2"><Users className="size-4"/> {dept.length || (<Loader2 className="animate-spin h-3 w-3"/>)} {dept.length === 1 ? 'employee' : 'employees'}</span>
                       <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
                         {dept.type}
                       </span>

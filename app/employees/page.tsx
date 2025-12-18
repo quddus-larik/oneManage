@@ -50,6 +50,7 @@ type Employee = {
   position: string;
   phone: string;
   department_id: string;
+  salary: number | 0;
 };
 
 type Department = {
@@ -63,6 +64,7 @@ type EmployeeFormData = {
   position: string;
   phone: string;
   department_id: string;
+  salary?: number | 0;
 };
 
 export default function Page() {
@@ -167,7 +169,7 @@ export default function Page() {
       const result = await res.json();
       if (result.success) {
         await fetchEmployees();
-        setAddFormData({ name: "", email: "", position: "", phone: "", department_id: "" });
+        setAddFormData({ name: "", email: "", position: "", phone: "", department_id: "", salary: 0 });
         setIsAddDrawerOpen(false);
       } else {
         alert(result.message || "Failed to add employee");
@@ -234,16 +236,18 @@ export default function Page() {
   };
 
   const handleEditClick = (emp: Employee) => {
-    setSelectedEmployee(emp);
-    setEditFormData({
-      name: emp.name,
-      email: emp.email,
-      position: emp.position,
-      phone: emp.phone,
-      department_id: emp.department_id,
-    });
-    setIsEditDrawerOpen(true);
-  };
+  setSelectedEmployee(emp);
+  setEditFormData({
+    name: emp.name,
+    email: emp.email,
+    position: emp.position,
+    phone: emp.phone,
+    department_id: emp.department_id,
+    salary: emp.salary ?? 0,
+  });
+  setIsEditDrawerOpen(true);
+};
+
 
   return (
     <Dashboard>
@@ -290,6 +294,7 @@ export default function Page() {
                 <TableHead>Position</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Salary</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -302,6 +307,7 @@ export default function Page() {
                     <TableCell>{emp.position}</TableCell>
                     <TableCell>{emp.phone}</TableCell>
                     <TableCell>{departmentMap.get(emp.department_id) || "—"}</TableCell>
+                    <TableCell>{emp.salary?.toLocaleString() ?? "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
                         variant="outline"
@@ -397,6 +403,20 @@ export default function Page() {
                     disabled={isAddLoading}
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-salary">Salary</Label>
+                  <Input
+                    id="add-salary"
+                    type="number"
+                    value={addFormData.salary ?? ""}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        salary: Number(e.target.value),
+                      })
+                    }
+                  /></div>
+
 
                 <div className="grid gap-2">
                   <Label htmlFor="add-position">Position</Label>
@@ -498,6 +518,22 @@ export default function Page() {
                       disabled={isEditLoading}
                     />
                   </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-salary">Salary</Label>
+                    <Input
+                      id="edit-salary"
+                      type="number"
+                      value={editFormData.salary ?? ""}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          salary: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+
 
                   <div className="grid gap-2">
                     <Label htmlFor="edit-phone">Phone</Label>

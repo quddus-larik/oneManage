@@ -18,7 +18,7 @@ interface Employee {
   id: string;
   name: string;
   salary: number;
-  createdAt?: string;
+  added_at?: string;
 }
 
 export default function Page() {
@@ -56,8 +56,8 @@ export default function Page() {
     : 0;
 
   const newMembers = employees.filter((emp) => {
-    if (!emp.createdAt) return false;
-    const diff = Date.now() - new Date(emp.createdAt).getTime();
+    if (!emp.added_at) return false;
+    const diff = Date.now() - new Date(emp.added_at).getTime();
     return diff / (1000 * 60 * 60 * 24) <= 30;
   }).length;
 

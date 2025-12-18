@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
         email: employee.email,
         position: employee.position || null,
         phone: employee.phone || null,
+        salary: employee.salary ?? 0, // ✅ ADD THIS
       }])
       .select()
       .single();
@@ -125,6 +126,7 @@ export async function PUT(req: NextRequest) {
         position: employee.position || null,
         phone: employee.phone || null,
         department_id: employee.department_id || null,
+        salary: employee.salary ?? 0, 
         updated_at: new Date().toISOString(),
       })
       .eq("id", employee.id)
