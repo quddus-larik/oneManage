@@ -177,7 +177,7 @@ export default function Page() {
       const result = await res.json();
       if (result.success) {
         await fetchEmployees();
-        setAddFormData({ name: "", email: "", position: "", phone: "", department_id: "", salary: 0 });
+        setAddFormData({ name: "", email: "", position: "", phone: "", department_id: "", salary: 0, date_of_birth: "", gender: "" });
         setIsAddDrawerOpen(false);
       } else {
         alert(result.message || "Failed to add employee");
