@@ -3,45 +3,113 @@ import { supabase, getUserByEmail } from "@/lib/supabase"
 import { currentUser } from "@clerk/nextjs/server"
 
 export async function GET(req: NextRequest) {
-    try {
-        const authUser = await currentUser();
-        const email = authUser?.primaryEmailAddress?.emailAddress;
+  try {
+    
+    const authUser = await currentUser()
+    const email = authUser?.primaryEmailAddress?.emailAddress
 
-        if (!email) {
-            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-        }
-
-        const user = await getUserByEmail(email);
-        if (!user) {
-            return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
-        }
-
-        const { searchParams } = new URL(req.url);
-        const taskId = searchParams.get("id");
-
-        let query = supabase
-            .from("tasks")
-            .select("*")
-            .eq("user_id", user.id);
-
-        if (taskId) {
-            query = query.eq("id", taskId);
-        }
-
-        const { data: tasks, error } = await query;
-
-        if (error) throw error;
-
-        if (taskId && tasks && tasks.length > 0) {
-            return NextResponse.json({ success: true, data: tasks[0] });
-        }
-
-        return NextResponse.json({ success: true, data: tasks || [] });
-    } catch (err: any) {
-        console.error("Task GET Error:", err); 
-        return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 });
+    if (!email) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      )
     }
+
+    
+    const user = await getUserByEmail(email)
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      )
+    }
+
+   
+    const { searchParams } = new URL(req.url)
+    const taskId = searchParams.get("id")
+
+    
+    let query = supabase
+      .from("tasks")
+      .select(`
+        id,
+        title,
+        description,
+        priority,
+        due_date,
+        created_at,
+        updated_at,
+        task_assignments (
+          id,
+          completed,
+          assigned_at,
+          completed_at,
+          employees (
+            id,
+            name,
+            email,
+            position,
+            profile_photo
+          )
+        )
+      `)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+
+    if (taskId) {
+      query = query.eq("id", taskId)
+    }
+
+    const { data: tasks, error } = await query
+    if (error) throw error
+
+  
+    const normalizedTasks = (tasks || []).map((task: any) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      due_date: task.due_date,
+      created_at: task.created_at,
+      updated_at: task.updated_at,
+
+      
+      assigned: Array.isArray(task.task_assignments)
+        ? task.task_assignments.map((ta: any) => ({
+            id: ta.employees?.id,
+            name: ta.employees?.name,
+            email: ta.employees?.email,
+            position: ta.employees?.position,
+            profile_photo: ta.employees?.profile_photo,
+            completed: ta.completed,
+            assigned_at: ta.assigned_at,
+            completed_at: ta.completed_at,
+          }))
+        : [],
+    }))
+
+    
+    if (taskId) {
+      if (normalizedTasks.length === 0) {
+        return NextResponse.json(
+          { success: false, message: "Task not found" },
+          { status: 404 }
+        )
+      }
+
+      return NextResponse.json({ success: true, data: normalizedTasks[0] })
+    }
+
+    return NextResponse.json({ success: true, data: normalizedTasks })
+  } catch (err: any) {
+    console.error("Task GET Error:", err)
+    return NextResponse.json(
+      { success: false, message: "Internal Server Error" },
+      { status: 500 }
+    )
+  }
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +118,7 @@ export async function POST(req: NextRequest) {
     if (!email) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
 
     const { title, description, priority, dueDate, assigned } = await req.json()
-    
+
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, message: "Task title required" }, { status: 400 })
     }

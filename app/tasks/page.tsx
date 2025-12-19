@@ -367,7 +367,7 @@ export default function Page() {
 
                   <CardFooter className="flex justify-between items-center">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      <Users size={15}/> {task.assigned.length} assignees
+                      <Users size={15}/> {task?.assigned.length} assignees
                     </span>
 
                     <DropdownMenu>

@@ -51,6 +51,8 @@ type Employee = {
   phone: string;
   department_id: string;
   salary: number | 0;
+  gender: string;
+  date_of_birth: string;
 };
 
 type Department = {
@@ -65,6 +67,8 @@ type EmployeeFormData = {
   phone: string;
   department_id: string;
   salary?: number | 0;
+  gender: string;
+  date_of_birth: string;
 };
 
 export default function Page() {
@@ -81,6 +85,8 @@ export default function Page() {
     position: "",
     phone: "",
     department_id: "",
+    gender: "",
+    date_of_birth: ""
   });
   const [editFormData, setEditFormData] = React.useState<EmployeeFormData>({
     name: "",
@@ -88,6 +94,8 @@ export default function Page() {
     position: "",
     phone: "",
     department_id: "",
+    gender: "",
+    date_of_birth: ""
   });
   const [isAddLoading, setIsAddLoading] = React.useState(false);
   const [isEditLoading, setIsEditLoading] = React.useState(false);
@@ -244,6 +252,8 @@ export default function Page() {
     phone: emp.phone,
     department_id: emp.department_id,
     salary: emp.salary ?? 0,
+    gender: emp.gender?? "--",
+    date_of_birth: emp.date_of_birth ?? "--"
   });
   setIsEditDrawerOpen(true);
 };
@@ -308,6 +318,8 @@ export default function Page() {
                     <TableCell>{emp.phone}</TableCell>
                     <TableCell>{departmentMap.get(emp.department_id) || "—"}</TableCell>
                     <TableCell>{emp.salary?.toLocaleString() ?? "—"}</TableCell>
+                    <TableCell>{emp.gender ?? "—"}</TableCell>
+                    <TableCell>{emp.date_of_birth ?? "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
                         variant="outline"

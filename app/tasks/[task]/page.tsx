@@ -64,10 +64,16 @@ export default function Page() {
     setSendingEmail(employeeEmail);
 
     try {
-      const res = await fetch(
-        `/api/v1/tasks/notify?id=${id}&email=${employeeEmail}`,
-        { method: "POST" }
-      );
+      const res = await fetch("/api/v1/tasks/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          admin,
+          email: employeeEmail,
+          task_id: id,
+        }),
+      });
+
       const data = await res.json();
       if (res.ok) {
         alert(`Notification sent to ${employeeEmail}`);
@@ -132,6 +138,7 @@ export default function Page() {
                   </Button>
                 </div>
               ))}
+
             </div>
           </div>
         </div>
