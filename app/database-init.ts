@@ -54,7 +54,11 @@ CREATE TABLE IF NOT EXISTS employees (
   position VARCHAR(255),
   phone VARCHAR(20),
   added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  salary INT8,
+  profile_photo TEXT,
+  gender TEXT,
+  date_of_birth DATE
 );
 
 CREATE INDEX IF NOT EXISTS idx_employees_user_id ON employees(user_id);
