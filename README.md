@@ -27,5 +27,5 @@ Writing Issues must be started with Type Labels. `feat: , bug:, inh: , ingrate:`
 Description must have Proof using screen shot, screen records.
 
 ### Pull Request
-The important in pull request if you solve it working in existing open issue then use commit title in format like `solved #number <type> issue`. 
+The important in pull request if you solve it working in existing open issue then use commit title in format like `solved Close #number <type> issue`. 
 
