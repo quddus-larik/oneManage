@@ -108,7 +108,6 @@ export default function Page() {
   });
   const [isDeleteLoading, setIsDeleteLoading] = React.useState(false);
 
-  // Fetch employees
   const fetchEmployees = React.useCallback(async () => {
     try {
       const res = await fetch("/api/v1/employees");
@@ -121,7 +120,6 @@ export default function Page() {
     }
   }, []);
 
-  // Fetch departments
   const fetchDepartments = React.useCallback(async () => {
     try {
       const res = await fetch("/api/v1/departments");
@@ -134,7 +132,6 @@ export default function Page() {
     }
   }, []);
 
-  // Initial load
   React.useEffect(() => {
     const load = async () => {
       setIsLoading(true);
@@ -144,7 +141,6 @@ export default function Page() {
     load();
   }, [fetchEmployees, fetchDepartments]);
 
-  // Filter employees
   const filteredEmployees = React.useMemo(() => {
     return employees.filter(
       (emp) =>
@@ -154,14 +150,12 @@ export default function Page() {
     );
   }, [employees, search]);
 
-  // Create department map for quick lookup
   const departmentMap = React.useMemo(() => {
     const map = new Map<string, string>();
     departments.forEach((dept) => map.set(dept.id, dept.name));
     return map;
   }, [departments]);
 
-  // Add employee
   const handleAddEmployee = async () => {
     if (!addFormData.name || !addFormData.email || !addFormData.position || !addFormData.department_id) {
       alert("Please fill all required fields");
@@ -191,7 +185,6 @@ export default function Page() {
     }
   };
 
-  // Update employee
   const handleUpdateEmployee = async () => {
     if (!editFormData.name || !editFormData.email || !editFormData.position || !editFormData.department_id) {
       alert("Please fill all required fields");
@@ -222,7 +215,6 @@ export default function Page() {
     }
   };
 
-  // Delete employee
   const handleDeleteEmployee = async () => {
     setIsDeleteLoading(true);
     try {
