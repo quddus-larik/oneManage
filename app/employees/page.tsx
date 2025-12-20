@@ -41,7 +41,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { PenLine, Trash } from "lucide-react";
+import { ArrowUpRight, Loader2, PenLine, Plus, Trash } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Employee = {
   id: string;
@@ -252,8 +253,8 @@ export default function Page() {
     phone: emp.phone,
     department_id: emp.department_id,
     salary: emp.salary ?? 0,
-    gender: emp.gender?? "--",
-    date_of_birth: emp.date_of_birth ?? "--"
+    gender: emp.gender?? "",
+    date_of_birth: emp.date_of_birth ?? ""
   });
   setIsEditDrawerOpen(true);
 };
@@ -305,6 +306,8 @@ export default function Page() {
                 <TableHead>Phone</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Salary</TableHead>
+                <TableHead>Gender</TableHead>
+                <TableHead>DOB</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -316,7 +319,14 @@ export default function Page() {
                     <TableCell>{emp.email}</TableCell>
                     <TableCell>{emp.position}</TableCell>
                     <TableCell>{emp.phone}</TableCell>
-                    <TableCell>{departmentMap.get(emp.department_id) || "—"}</TableCell>
+                    <TableCell>
+                      <Tooltip>
+                      <TooltipTrigger>
+                        {departmentMap.get(emp.department_id)?.slice(0,8) + "..." || "—"}
+                      </TooltipTrigger>
+                      <TooltipContent>{departmentMap.get(emp.department_id) || "—"}</TooltipContent>
+                      </Tooltip>
+                    </TableCell>
                     <TableCell>{emp.salary?.toLocaleString() ?? "—"}</TableCell>
                     <TableCell>{emp.gender ?? "—"}</TableCell>
                     <TableCell>{emp.date_of_birth ?? "—"}</TableCell>
@@ -328,6 +338,12 @@ export default function Page() {
                         disabled={isLoading}
                       >
                         <PenLine className="h-4 w-4" />
+                      </Button>
+                      <Button
+                      size="icon"
+
+                      >
+                        <ArrowUpRight/>
                       </Button>
                       <Dialog open={deleteDialog.isOpen && deleteDialog.email === emp.email} onOpenChange={(open) => {
                         if (!open) {
@@ -371,6 +387,7 @@ export default function Page() {
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
+
                     </TableCell>
                   </TableRow>
                 ))
@@ -454,6 +471,28 @@ export default function Page() {
                 </div>
 
                 <div className="grid gap-2">
+                  <Label htmlFor="add-gender">Gender</Label>
+                  <Input
+                    id="add-gender"
+                    value={addFormData.gender}
+                    onChange={(e) => setAddFormData({ ...addFormData, gender: e.target.value })}
+                    placeholder="Employee gender"
+                    disabled={isAddLoading}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="add-dob">DOB</Label>
+                  <Input
+                    id="add-dob"
+                    value={addFormData.gender}
+                    onChange={(e) => setAddFormData({ ...addFormData, date_of_birth: e.target.value })}
+                    placeholder="date of birth"
+                    disabled={isAddLoading}
+                  />
+                </div>
+
+                <div className="grid gap-2">
                   <Label htmlFor="add-department">Department</Label>
                   <Select
                     value={addFormData.department_id}
@@ -476,7 +515,7 @@ export default function Page() {
 
               <DrawerFooter>
                 <Button onClick={handleAddEmployee} disabled={isAddLoading}>
-                  {isAddLoading ? "Adding..." : "Add Employee"}
+                  {isAddLoading? <Loader2 className="animate-spin"/> : <Plus />}{isAddLoading ? "Adding..." : "Add Employee"}
                 </Button>
                 <DrawerClose asChild>
                   <Button variant="outline" disabled={isAddLoading}>
@@ -555,6 +594,30 @@ export default function Page() {
                       value={editFormData.phone}
                       onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                       placeholder="+1 (555) 000-0000"
+                      disabled={isEditLoading}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-gender">Gender</Label>
+                    <Input
+                      id="edit-gender"
+                      type="text"
+                      value={editFormData.gender}
+                      onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+                      placeholder="Employee gender"
+                      disabled={isEditLoading}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-dob">DOB</Label>
+                    <Input
+                      id="edit-dob"
+                      type="date"
+                      value={editFormData.date_of_birth}
+                      onChange={(e) => setEditFormData({ ...editFormData, date_of_birth: e.target.value })}
+                      placeholder="Date of Birth"
                       disabled={isEditLoading}
                     />
                   </div>

@@ -128,6 +128,8 @@ export async function PUT(req: NextRequest) {
         department_id: employee.department_id || null,
         salary: employee.salary ?? 0, 
         updated_at: new Date().toISOString(),
+        date_of_birth: employee.date_of_birth,
+        gender: employee.gender
       })
       .eq("id", employee.id)
       .eq("user_id", user.id)
