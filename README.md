@@ -29,3 +29,6 @@ Description must have Proof using screen shot, screen records.
 ### Pull Request
 The important in pull request if you solve it working in existing open issue then use commit title in format like `solved Close #number <type> issue`. 
 
+>[!WARNING]
+>It has unstable versions that is not released official because of partial development. It should be done by openSource Collaboration.
+
