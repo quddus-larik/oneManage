@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/quddus-larik/oneManage/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/quddus-larik/oneManage"></a>
-  <a href="https://github.com/quddus-larik/oneManage/LICENSE.md"><img alt="License" src="https://img.shields.io/badge/License-MIT+Commons_Clause-magenta"></a>
+  <a href="https://github.com/quddus-larik/oneManage/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT+Commons_Clause-magenta"></a>
 </div>
 
 # OneManage
