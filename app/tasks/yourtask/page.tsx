@@ -24,61 +24,82 @@ interface Task {
 
 function TaskPageContent() {
   const params = useSearchParams();
-  const id = params.get("id") || "";
-  const admin = params.get("admin") || "";
+  const task_id = params.get("id") || "";
 
   const [task, setTask] = useState<Task | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [updating, setUpdating] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch task
   useEffect(() => {
-    if (!id || !admin) return;
+    if (!task_id) return;
 
     const fetchTask = async () => {
       setLoading(true);
+      setError(null);
+
       try {
-        const res = await fetch(`/api/v1/tasks/update?admin=${admin}&task_id=${id}`);
+        const res = await fetch(`/api/v1/tasks/update?task_id=${task_id}`);
         const data = await res.json();
-        if (res.ok) setTask(data.task);
+
+        if (!res.ok) {
+          setError(data.error || "Failed to fetch task");
+          return;
+        }
+
+        setTask(data.task);
       } catch (err) {
         console.error(err);
+        setError("Failed to fetch task");
       } finally {
         setLoading(false);
       }
     };
 
     fetchTask();
-  }, [id, admin]);
+  }, [task_id]);
 
+  // Update employee task status
   const updateTaskStatus = async (completed: boolean) => {
     if (!task) return;
     setUpdating(true);
 
     try {
-      const res = await fetch("/api/v1/tasks/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ admin, task_id: task._id, completed }),
-      });
+      await Promise.all(
+        task.assigned.map((emp) =>
+          fetch("/api/v1/tasks/update", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ task_id: task._id, email: emp.email, completed }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const errData = await res.json();
+              throw new Error(errData.error || "Failed to update");
+            }
+          })
+        )
+      );
 
-      if (res.ok) {
-        setTask((prev) =>
-          prev
-            ? {
-                ...prev,
-                assigned: prev.assigned.map((a) => ({ ...a, completed })),
-              }
-            : prev
-        );
-      }
+      // Update UI locally
+      setTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              assigned: prev.assigned.map((a) => ({ ...a, completed })),
+            }
+          : prev
+      );
     } catch (err) {
       console.error(err);
+      setError("Failed to update task status");
     } finally {
       setUpdating(false);
     }
   };
 
   if (loading) return <p className="text-center mt-10">Loading task...</p>;
+  if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
   if (!task) return <p className="text-center mt-10">Task not found</p>;
 
   const completedStatus = task.assigned.every((a) => a.completed);
@@ -108,7 +129,7 @@ function TaskPageContent() {
 
         <CardFooter>
           <p>
-            The task assigned by admin is currently:{" "}
+            Task status:{" "}
             <span className={completedStatus ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
               {completedStatus ? "Completed" : "Incomplete"}
             </span>
