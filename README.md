@@ -32,7 +32,7 @@ Writing Issues must be started with Type Labels. `feat: , bug:, inh: , ingrate:`
 Description must have Proof using screen shot, screen records.
 
 >[!WARNING]
->It is important to discuss before creating an Issue or Pull Request.
+>It is important to discuss after creating an Issue or Pull Request.
 
 ### Pull Request
 The important in pull request if you solve it working in existing open issue then use commit title in format like `solved Close #number <type> issue`. 
