@@ -35,7 +35,7 @@ Description must have Proof using screen shot, screen records.
 >It is important to discuss after creating an Issue or Pull Request.
 
 ### Pull Request
-The important in pull request if you solve it working in existing open issue then use commit title in format like `solved Close #number <type> issue`. 
+The important in pull request if you solve it working in existing open issue then use commit title in format like `solved Close #number <type> issue` and branching name must be in `feat/something-new, fix/some-bugs, minor/edit-minithing`. 
 
 >[!WARNING]
 >It has unstable versions that is not released official because of partial development. It should be done by openSource Collaboration.
